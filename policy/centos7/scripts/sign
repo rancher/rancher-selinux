@@ -21,7 +21,7 @@ case "$RPM_CHANNEL" in
     fi
     gpg --import - <<<"$TESTING_PRIVATE_KEY"
     ;;
-  "latest"|"stable")
+  "production")
     if ! grep "BEGIN PGP PRIVATE KEY BLOCK" <<<"$PRIVATE_KEY"; then
       echo "PRIVATE_KEY not defined, failing rpm sign"
       exit 1
@@ -29,7 +29,7 @@ case "$RPM_CHANNEL" in
     gpg --import - <<<"$PRIVATE_KEY"
     ;;
   *)
-    echo "RPM_CHANNEL $RPM_CHANNEL does not match one of: [testing, latest, stable]"
+    echo "RPM_CHANNEL $RPM_CHANNEL does not match one of: [testing, production]"
     exit 1
     ;;
 esac

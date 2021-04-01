@@ -36,7 +36,7 @@ case "$RPM_CHANNEL" in
     export AWS_SECRET_ACCESS_KEY=$TESTING_AWS_SECRET_ACCESS_KEY
     export AWS_S3_BUCKET=$TESTING_AWS_S3_BUCKET
     ;;
-  "latest"|"stable")
+  "production")
     if [ -z "$AWS_S3_BUCKET" ]; then
       echo "AWS_S3_BUCKET not defined, failing rpm upload"
       exit 1
@@ -51,7 +51,7 @@ case "$RPM_CHANNEL" in
     fi
     ;;
   *)
-    echo "RPM_CHANNEL $RPM_CHANNEL does not match one of: [testing, latest, stable]"
+    echo "RPM_CHANNEL $RPM_CHANNEL does not match one of: [testing, production]"
     exit 1
     ;;
 esac
