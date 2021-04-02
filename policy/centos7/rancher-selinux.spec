@@ -3,6 +3,10 @@
 %define selinux_policyver 3.13.1-252
 %define container_policyver 2.107.3
 
+%define relabel_files() \
+mkdir -p /var/lib/rancher/rke; \
+restorecon -R /var/lib/rancher
+
 Name:   rancher-selinux
 Version:	%{rancher_selinux_version}
 Release:	%{rancher_selinux_release}.el7
@@ -31,6 +35,7 @@ install -m 644 %{SOURCE0} %{buildroot}%{_datadir}/selinux/packages
 semodule -n -i %{_datadir}/selinux/packages/rancher.pp
 if /usr/sbin/selinuxenabled ; then
     /usr/sbin/load_policy
+    %relabel_files
 fi;
 exit 0
 
