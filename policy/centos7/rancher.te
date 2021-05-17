@@ -29,3 +29,39 @@ allow rke_logreader_t syslogd_var_run_t:dir read;
 allow rke_logreader_t syslogd_var_run_t:file { getattr open read };
 allow rke_logreader_t var_log_t:dir read;
 allow rke_logreader_t var_log_t:file { getattr open read };
+
+########################
+# type rke_container_t #
+########################
+gen_require(`
+        type container_runtime_t, unconfined_service_t;
+        type container_log_t;
+        type container_var_lib_t;
+        type container_var_run_t;
+        class dir { read search };
+        class file { open read };
+')
+type rke_opt_t;
+files_type(rke_opt_t)
+type rke_etc_t;
+files_type(rke_etc_t)
+container_domain_template(rke_container)
+virt_sandbox_domain(rke_container_t)
+corenet_unconfined(rke_container_t)
+manage_dirs_pattern(rke_container_t, container_var_lib_t, container_var_lib_t)
+manage_files_pattern(rke_container_t, container_var_lib_t, container_var_lib_t)
+manage_dirs_pattern(rke_container_t, container_log_t, container_log_t)
+manage_files_pattern(rke_container_t, container_log_t, container_log_t)
+manage_dirs_pattern(rke_container_t, rke_opt_t, rke_opt_t)
+manage_files_pattern(rke_container_t, rke_opt_t, rke_opt_t)
+manage_dirs_pattern(rke_container_t, rke_etc_t, rke_etc_t)
+manage_files_pattern(rke_container_t, rke_etc_t, rke_etc_t)
+manage_dirs_pattern(rke_container_t, container_var_lib_t, container_var_lib_t)
+manage_files_pattern(rke_container_t, container_var_lib_t, container_var_lib_t)
+manage_dirs_pattern(rke_container_t, container_var_run_t, container_var_run_t)
+manage_files_pattern(rke_container_t, container_var_run_t, container_var_run_t)
+allow rke_container_t self:tcp_socket listen;
+allow rke_container_t container_var_lib_t:dir { relabelfrom relabelto };
+allow rke_container_t container_var_lib_t:file { relabelfrom relabelto };
+allow rke_container_t rke_opt_t:dir { relabelfrom relabelto };
+allow rke_container_t rke_opt_t:file { relabelfrom relabelto };
