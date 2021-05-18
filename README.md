@@ -17,8 +17,11 @@ The following list shows the expected tag to (example) transformation for RPM's
 
 |Tag|Tree State|Output RPM|RPM Channel|Notes|
 |:--|:---------|:---------|:----------|:----|
-| master (no tag) | Clean | `rancher-selinux-0.0~0d52f7d8-0.el7_8.noarch.rpm` | Testing ||
-| master (no tag) | Dirty | `rancher-selinux-0.0~0d52f7d8-0.el7_8.noarch.rpm` | Testing ||
-| v0.2.testing.1 | Clean | `rancher-selinux-0.2-1.el7_8.noarch.rpm` | Testing ||
-| v0.2.production.1 | Clean | `rancher-selinux-0.2-1.el7_8.noarch.rpm` | Production ||
-| v0.2.production.2 | Clean | `rancher-selinux-0.2-2.el7_8.noarch.rpm` | Production ||
+| master (no tag) | Clean | `rancher-selinux-0.0~0d52f7d8-0.el7.noarch.rpm` | Testing ||
+| master (no tag) | Dirty | `rancher-selinux-0.0~0d52f7d8-0.el7.noarch.rpm` | Testing ||
+| v0.2-alpha1.testing.1 | Clean | `rancher-selinux-0.2~alpha1-1.el7.noarch.rpm` | Testing ||
+| v0.2-alpha2.testing.1 | Clean | `rancher-selinux-0.2~alpha2-1.el7.noarch.rpm` | Testing ||
+| v0.2-rc1.testing.1 | Clean | `rancher-selinux-0.2~rc1-1.el7.noarch.rpm` | Testing ||
+| v0.2-rc2.testing.1 | Clean | `rancher-selinux-0.2~rc2-1.el7.noarch.rpm` | Testing ||
+| v0.2.testing.1 | Clean | `rancher-selinux-0.2-1.el7.noarch.rpm` | Testing ||
+| v0.2.production.1 | Clean | `rancher-selinux-0.2-1.el7.noarch.rpm` | Production ||
