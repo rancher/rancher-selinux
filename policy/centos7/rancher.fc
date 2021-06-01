@@ -1,1 +1,3 @@
 /var/lib/rancher/rke(/.*)?                                              gen_context(system_u:object_r:container_var_lib_t,s0)
+/etc/kubernetes(/.*)?                                                   gen_context(system_u:object_r:rke_etc_t,s0)
+/opt/rke(/.*)?                                                          gen_context(system_u:object_r:rke_opt_t,s0)

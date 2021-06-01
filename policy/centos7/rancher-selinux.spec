@@ -4,8 +4,8 @@
 %define container_policyver 2.107.3
 
 %define relabel_files() \
-mkdir -p /var/lib/rancher/rke; \
-restorecon -R /var/lib/rancher
+mkdir -p /var/lib/rancher/rke /etc/kubernetes /opt/rke; \
+restorecon -R /var/lib/rancher /etc/kubernetes /opt/rke;
 
 Name:   rancher-selinux
 Version:	%{rancher_selinux_version}
