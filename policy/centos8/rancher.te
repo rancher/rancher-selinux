@@ -58,7 +58,7 @@ manage_dirs_pattern(rke_container_t, container_var_lib_t, container_var_lib_t)
 manage_files_pattern(rke_container_t, container_var_lib_t, container_var_lib_t)
 manage_dirs_pattern(rke_container_t, container_var_run_t, container_var_run_t)
 manage_files_pattern(rke_container_t, container_var_run_t, container_var_run_t)
-allow rke_container_t self:tcp_socket listen;
+allow rke_container_t self:tcp_socket { accept listen };
 allow rke_container_t container_var_lib_t:file map;
 allow rke_container_t rke_opt_t:file map;
 allow rke_container_t container_var_lib_t:dir { relabelfrom relabelto };
