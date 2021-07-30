@@ -65,3 +65,23 @@ allow rke_container_t container_var_lib_t:dir { relabelfrom relabelto };
 allow rke_container_t container_var_lib_t:file { relabelfrom relabelto };
 allow rke_container_t rke_opt_t:dir { relabelfrom relabelto };
 allow rke_container_t rke_opt_t:file { relabelfrom relabelto };
+
+########################
+# type rke_network_t   #
+########################
+gen_require(`
+        type container_runtime_t, unconfined_service_t;
+        type iptables_var_run_t;
+        type var_run_t;
+        type kernel_t;
+')
+container_domain_template(rke_network)
+virt_sandbox_domain(rke_network_t)
+corenet_unconfined(rke_network_t)
+manage_dirs_pattern(rke_network_t, iptables_var_run_t, iptables_var_run_t)
+manage_files_pattern(rke_network_t, iptables_var_run_t, iptables_var_run_t)
+manage_dirs_pattern(rke_network_t, var_run_t, var_run_t)
+manage_files_pattern(rke_network_t, var_run_t, var_run_t)
+allow rke_network_t kernel_t:system module_request;
+allow rke_network_t kernel_t:unix_dgram_socket sendto;
+allow rke_network_t self:netlink_route_socket nlmsg_write;
