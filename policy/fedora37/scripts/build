@@ -1,0 +1,20 @@
+#!/bin/bash
+set -e -x
+
+cd $(dirname $0)/..
+. ./scripts/version
+
+dnf -y install container-selinux selinux-policy-devel rpm-build
+
+make -f /usr/share/selinux/devel/Makefile rancher.pp
+
+rpmbuild \
+    --define "rancher_selinux_version ${RPM_VERSION}" \
+    --define "rancher_selinux_release ${RPM_RELEASE}" \
+    --define "_sourcedir $PWD" \
+    --define "_specdir $PWD" \
+    --define "_builddir $PWD" \
+    --define "_srcrpmdir ${PWD}/dist/source" \
+    --define "_buildrootdir $PWD/.build" \
+    --define "_rpmdir ${PWD}/dist" \
+    -ba rancher-selinux.spec
