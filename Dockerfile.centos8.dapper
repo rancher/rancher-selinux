@@ -1,13 +1,6 @@
-FROM centos:8
+FROM quay.io/centos/centos:stream8
 
-# CentOS 8 has reached EOL: https://www.centos.org/centos-linux-eol/
-# Therefore, we need to switch the mirrorlist for the appstream repo
-#
-# point to vault.epel.cloud
-# https://serverfault.com/questions/1093922/failing-to-run-yum-update-in-centos-8/1093928#1093928
-RUN pushd /etc/yum.repos.d/ && sed -i 's/mirrorlist/#mirrorlist/g' /etc/yum.repos.d/CentOS-* && sed -i 's|#baseurl=http://mirror.centos.org|baseurl=http://vault.epel.cloud|g' /etc/yum.repos.d/CentOS-* && popd
-
-RUN yum install -y epel-release && yum -y install container-selinux selinux-policy-devel yum-utils rpm-build git jq
+RUN yum install -y epel-release && yum -y install container-selinux selinux-policy-devel yum-utils rpm-build git
 
 ENV DAPPER_SOURCE /source
 ENV DAPPER_OUTPUT ./dist

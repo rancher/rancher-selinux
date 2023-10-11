@@ -106,7 +106,7 @@ steps:
     path: /var/run/docker.sock
 
 - name: Sign RPM EL8
-  image: centos:7
+  image: quay.io/centos/centos:stream8
   environment:
     PRIVATE_KEY:
       from_secret: private_key
@@ -128,7 +128,7 @@ steps:
     - tag
 
 - name: Yum Repo Upload EL8
-  image: centos:7
+  image: quay.io/centos/centos:stream8
   environment:
     AWS_S3_BUCKET:
       from_secret: aws_s3_bucket
