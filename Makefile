@@ -1,5 +1,6 @@
 CENTOS7_TARGETS := $(addprefix centos7-,$(shell ls policy/centos7/scripts))
 CENTOS8_TARGETS := $(addprefix centos8-,$(shell ls policy/centos8/scripts))
+CENTOS9_TARGETS := $(addprefix centos9-,$(shell ls policy/centos9/scripts))
 MICROOS_TARGETS := $(addprefix microos-,$(shell ls policy/microos/scripts))
 
 .dapper:
@@ -14,6 +15,9 @@ $(CENTOS7_TARGETS): .dapper
 
 $(CENTOS8_TARGETS): .dapper
 	./.dapper -f Dockerfile.centos8.dapper $(@:centos8-%=%)
+
+$(CENTOS9_TARGETS): .dapper
+	./.dapper -f Dockerfile.centos9.dapper $(@:centos9-%=%)
 
 $(MICROOS_TARGETS): .dapper
 	./.dapper -f Dockerfile.microos.dapper $(@:microos-%=%)
