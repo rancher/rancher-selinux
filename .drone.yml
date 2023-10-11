@@ -16,7 +16,7 @@ steps:
     path: /var/run/docker.sock
 
 - name: Sign RPM EL7
-  image: centos:7
+  image: centos:8
   environment:
     PRIVATE_KEY:
       from_secret: private_key
@@ -38,7 +38,7 @@ steps:
     - tag
 
 - name: Yum Repo Upload EL7
-  image: centos:7
+  image: centos:8
   environment:
     AWS_S3_BUCKET:
       from_secret: aws_s3_bucket
@@ -106,7 +106,7 @@ steps:
     path: /var/run/docker.sock
 
 - name: Sign RPM EL8
-  image: centos:7
+  image: centos:8
   environment:
     PRIVATE_KEY:
       from_secret: private_key
@@ -128,7 +128,7 @@ steps:
     - tag
 
 - name: Yum Repo Upload EL8
-  image: centos:7
+  image: centos:8
   environment:
     AWS_S3_BUCKET:
       from_secret: aws_s3_bucket
@@ -196,7 +196,7 @@ steps:
     path: /var/run/docker.sock
 
 - name: Sign RPM MicroOS
-  image: centos:7
+  image: centos:8
   environment:
     PRIVATE_KEY:
       from_secret: private_key
@@ -218,7 +218,7 @@ steps:
     - tag
 
 - name: Yum Repo Upload MicroOS
-  image: centos:7
+  image: centos:8
   environment:
     AWS_S3_BUCKET:
       from_secret: aws_s3_bucket
