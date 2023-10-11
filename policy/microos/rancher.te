@@ -2,6 +2,7 @@ policy_module(rancher, 1.0.0)
 
 gen_require(`
     type container_runtime_t, unconfined_service_t;
+    type container_file_t;
 ')
 
 ########################
@@ -14,7 +15,7 @@ gen_require(`
         class file { getaddr open read };
         class lnk_file { getattr read };
 ')
-container_domain_template(rke_kubereader)
+container_domain_template(rke_kubereader, container)
 virt_sandbox_domain(rke_kubereader_t)
 corenet_unconfined(rke_kubereader_t)
 allow rke_kubereader_t kubernetes_file_t:dir { open read search };
@@ -33,7 +34,7 @@ gen_require(`
         class file { open read };
         class lnk_file { getattr read };
 ')
-container_domain_template(rke_logreader)
+container_domain_template(rke_logreader, container)
 virt_sandbox_domain(rke_logreader_t)
 corenet_unconfined(rke_logreader_t)
 allow rke_logreader_t container_log_t:dir { open read search };
@@ -60,7 +61,7 @@ gen_require(`
 ')
 type rke_opt_t;
 files_type(rke_opt_t)
-container_domain_template(rke_container)
+container_domain_template(rke_container, container)
 virt_sandbox_domain(rke_container_t)
 corenet_unconfined(rke_container_t)
 manage_dirs_pattern(rke_container_t, container_var_lib_t, container_var_lib_t)
@@ -92,7 +93,7 @@ gen_require(`
         type var_run_t;
         type kernel_t;
 ')
-container_domain_template(rke_network)
+container_domain_template(rke_network, container)
 virt_sandbox_domain(rke_network_t)
 corenet_unconfined(rke_network_t)
 manage_dirs_pattern(rke_network_t, iptables_var_run_t, iptables_var_run_t)
