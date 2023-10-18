@@ -1,0 +1,105 @@
+policy_module(rancher, 1.0.0)
+
+gen_require(`
+    type container_runtime_t, unconfined_service_t;
+    type container_file_t;
+')
+
+########################
+# type rke_kubereader_t #
+########################
+gen_require(`
+        type container_runtime_t, unconfined_service_t;
+        type kubernetes_file_t;
+        class dir { open read search };
+        class file { getaddr open read };
+        class lnk_file { getattr read };
+')
+container_domain_template(rke_kubereader, container)
+virt_sandbox_domain(rke_kubereader_t)
+corenet_unconfined(rke_kubereader_t)
+allow rke_kubereader_t kubernetes_file_t:dir { open read search };
+allow rke_kubereader_t kubernetes_file_t:file { getattr open read };
+allow rke_kubereader_t kubernetes_file_t:lnk_file { getattr read };
+
+########################
+# type rke_logreader_t #
+########################
+gen_require(`
+        type container_runtime_t, unconfined_service_t;
+        type container_log_t;
+        type syslogd_var_run_t;
+        type var_log_t;
+        class dir { read search };
+        class file { open read };
+        class lnk_file { getattr read };
+')
+container_domain_template(rke_logreader, container)
+virt_sandbox_domain(rke_logreader_t)
+corenet_unconfined(rke_logreader_t)
+allow rke_logreader_t container_log_t:dir { open read search };
+allow rke_logreader_t container_log_t:lnk_file { getattr read };
+allow rke_logreader_t container_log_t:file { getattr open read };
+allow rke_logreader_t container_var_lib_t:dir search;
+allow rke_logreader_t container_var_lib_t:file { getattr open read };
+allow rke_logreader_t container_var_lib_t:lnk_file { getattr read };
+allow rke_logreader_t syslogd_var_run_t:dir read;
+allow rke_logreader_t syslogd_var_run_t:file { getattr map open read };
+allow rke_logreader_t var_log_t:dir read;
+allow rke_logreader_t var_log_t:file { getattr map open read };
+
+########################
+# type rke_container_t #
+########################
+gen_require(`
+        type container_runtime_t, unconfined_service_t;
+        type container_log_t;
+        type kubernetes_file_t;
+        type container_var_run_t;
+        class dir { read search };
+        class file { open read };
+')
+type rke_opt_t;
+files_type(rke_opt_t)
+container_domain_template(rke_container, container)
+virt_sandbox_domain(rke_container_t)
+corenet_unconfined(rke_container_t)
+manage_dirs_pattern(rke_container_t, container_var_lib_t, container_var_lib_t)
+manage_files_pattern(rke_container_t, container_var_lib_t, container_var_lib_t)
+manage_dirs_pattern(rke_container_t, container_log_t, container_log_t)
+manage_files_pattern(rke_container_t, container_log_t, container_log_t)
+manage_dirs_pattern(rke_container_t, kubernetes_file_t, kubernetes_file_t)
+manage_files_pattern(rke_container_t, kubernetes_file_t, kubernetes_file_t)
+manage_dirs_pattern(rke_container_t, rke_opt_t, rke_opt_t)
+manage_files_pattern(rke_container_t, rke_opt_t, rke_opt_t)
+manage_dirs_pattern(rke_container_t, container_var_lib_t, container_var_lib_t)
+manage_files_pattern(rke_container_t, container_var_lib_t, container_var_lib_t)
+manage_dirs_pattern(rke_container_t, container_var_run_t, container_var_run_t)
+manage_files_pattern(rke_container_t, container_var_run_t, container_var_run_t)
+allow rke_container_t self:tcp_socket { accept listen };
+allow rke_container_t container_var_lib_t:file map;
+allow rke_container_t rke_opt_t:file map;
+allow rke_container_t container_var_lib_t:dir { relabelfrom relabelto };
+allow rke_container_t container_var_lib_t:file { relabelfrom relabelto };
+allow rke_container_t rke_opt_t:dir { relabelfrom relabelto };
+allow rke_container_t rke_opt_t:file { relabelfrom relabelto };
+
+########################
+# type rke_network_t   #
+########################
+gen_require(`
+        type container_runtime_t, unconfined_service_t;
+        type iptables_var_run_t;
+        type var_run_t;
+        type kernel_t;
+')
+container_domain_template(rke_network, container)
+virt_sandbox_domain(rke_network_t)
+corenet_unconfined(rke_network_t)
+manage_dirs_pattern(rke_network_t, iptables_var_run_t, iptables_var_run_t)
+manage_files_pattern(rke_network_t, iptables_var_run_t, iptables_var_run_t)
+manage_dirs_pattern(rke_network_t, var_run_t, var_run_t)
+manage_files_pattern(rke_network_t, var_run_t, var_run_t)
+allow rke_network_t kernel_t:system module_request;
+allow rke_network_t kernel_t:unix_dgram_socket sendto;
+allow rke_network_t self:netlink_route_socket nlmsg_write;
