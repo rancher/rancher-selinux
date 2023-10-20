@@ -22,4 +22,4 @@ $(CENTOS9_TARGETS): .dapper
 $(MICROOS_TARGETS): .dapper
 	./.dapper -f Dockerfile.microos.dapper $(@:microos-%=%)
 
-.PHONY: $(CENTOS7_TARGETS) $(CENTOS8_TARGETS) $(MICROOS_TARGETS)
+.PHONY: $(CENTOS7_TARGETS) $(CENTOS8_TARGETS) $(CENTOS9_TARGETS) $(MICROOS_TARGETS)
