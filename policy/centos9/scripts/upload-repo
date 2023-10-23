@@ -5,10 +5,20 @@ pushd $(dirname $0)/..
 . ./scripts/version
 popd
 
-yum install -y epel-release
-yum install -y python3-pip
-pip install awscli==1.29.67
+# Install the awscli-v2 from AWS
+curl "https://awscli.amazonaws.com/awscli-exe-linux-$(uname -m).zip" -o "awscliv2.zip"
+unzip awscliv2.zip
+./aws/install
 
+# Test if awscli-v2 is installed 
+if aws --version &> /dev/null; then
+  echo "AWS CLI is installed."
+else
+  echo "AWS CLI not found, exiting."
+  exit 1
+fi
+
+# Prepare and Upload RPMs
 if [ -z "$RPM_CHANNEL" ]; then
   echo "RPM_CHANNEL not defined, failing rpm upload"
   exit 1
