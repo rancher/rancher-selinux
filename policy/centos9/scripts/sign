@@ -19,14 +19,14 @@ case "$RPM_CHANNEL" in
       echo "TESTING_PRIVATE_KEY not defined, failing rpm sign"
       exit 1
     fi
-    gpg --import - <<<"$TESTING_PRIVATE_KEY"
+    gpg --batch --import - <<< "$TESTING_PRIVATE_KEY" 
     ;;
   "production")
     if ! grep "BEGIN PGP PRIVATE KEY BLOCK" <<<"$PRIVATE_KEY"; then
       echo "PRIVATE_KEY not defined, failing rpm sign"
       exit 1
     fi
-    gpg --import - <<<"$PRIVATE_KEY"
+    gpg --batch --import - <<< "$PRIVATE_KEY" 
     ;;
   *)
     echo "RPM_CHANNEL $RPM_CHANNEL does not match one of: [testing, production]"
@@ -37,7 +37,7 @@ esac
 expect <<EOF
 set timeout 60
 spawn sh -c "rpmsign --addsign dist/centos9/**/rancher-*.rpm"
-expect "Enter pass phrase:"
+expect "Passphrase:"
 send -- "$PRIVATE_KEY_PASS_PHRASE\r"
 expect eof
 lassign [wait] _ _ _ code
