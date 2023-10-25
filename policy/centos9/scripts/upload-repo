@@ -1,6 +1,8 @@
 #!/bin/bash
 set -e -x
 
+yum install -y unzip
+
 pushd $(dirname $0)/..
 . ./scripts/version
 popd
@@ -65,5 +67,5 @@ case "$RPM_CHANNEL" in
     ;;
 esac
 
-aws s3 cp /source/dist/centos9/noarch/rancher-*.rpm $AWS_S3_BUCKET/$TARGET_EL9_S3_PATH/
-aws s3 cp /source/dist/centos9/source/rancher-*src.rpm $AWS_S3_BUCKET/$TARGET_EL9_SOURCE_S3_PATH/
+aws s3 cp dist/centos9/noarch/rancher-*.rpm $AWS_S3_BUCKET/$TARGET_EL9_S3_PATH/
+aws s3 cp dist/centos9/source/rancher-*src.rpm $AWS_S3_BUCKET/$TARGET_EL9_SOURCE_S3_PATH/
