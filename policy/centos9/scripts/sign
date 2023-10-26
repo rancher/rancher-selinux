@@ -1,35 +1,47 @@
 #!/bin/bash
-set -e -x
+# (production) https://rpm.rancher.io/public.key
+# (testing) https://rpm-testing.rancher.io/public.key
+set -e
 
+# Install 'rpm-sign' package
 yum install -y rpm-sign
 
+# Set GPG_TTY to prevent warning: Could not set GPG_TTY to stdin: Inappropriate ioctl for device
 export GPG_TTY=`tty`
 
+# Change the working directory to the script's directory
 pushd $(dirname $0)/..
+
+# Source the 'version' script
 . ./scripts/version
+
+# Return to the original working directory
 popd
 
+# Check the value of 'RPM_CHANNEL' and import GPG private keys based on its value
 case "$RPM_CHANNEL" in
   "testing")
+    # Set the TESTING_PRIVATE_KEY_PASS_PHRASE for testing
     export PRIVATE_KEY_PASS_PHRASE=$TESTING_PRIVATE_KEY_PASS_PHRASE
     if ! grep "BEGIN PGP PRIVATE KEY BLOCK" <<<"$TESTING_PRIVATE_KEY"; then
       echo "TESTING_PRIVATE_KEY not defined, failing rpm sign"
       exit 1
     fi
-    set +x
+
+    # Import the GPG private key for testing
     echo "Importing GPG private key TESTING_PRIVATE_KEY"
     gpg --yes --pinentry-mode loopback --batch --passphrase $PRIVATE_KEY_PASS_PHRASE --import - <<< "$TESTING_PRIVATE_KEY"
-    set -x
     ;;
+
   "production")
     if ! grep "BEGIN PGP PRIVATE KEY BLOCK" <<<"$PRIVATE_KEY"; then
       echo "PRIVATE_KEY not defined, failing rpm sign"
       exit 1
     fi
-    set +x
+
+    # Import the GPG private key for production
     echo "Importing GPG private key PRIVATE_KEY"
     gpg --yes --batch --pinentry-mode loopback --passphrase $PRIVATE_KEY_PASS_PHRASE --import - <<< "$PRIVATE_KEY"
-    set -x
     ;;
   *)
     echo "RPM_CHANNEL $RPM_CHANNEL does not match one of: [testing, production]"
@@ -37,11 +49,24 @@ case "$RPM_CHANNEL" in
     ;;
 esac
 
-set +x
+# Iterate through RPM files to sign with (production or testing) ci@rancher.com's GPG Key 
+for rpm in $(find dist/centos9/ -type f -name "*.rpm");
+do
+  echo "Signing $rpm with ci@rancher.com' GPG Key"
+  if rpmsign --addsign $rpm --define "_gpg_name ci@rancher.com" --define "_gpgbin /usr/bin/gpg" --define "__gpg_sign_cmd %{__gpg} gpg --force-v3-sigs --batch  --no-armor --pinentry-mode loopback --passphrase "$PRIVATE_KEY_PASS_PHRASE" -u "%{_gpg_name}" -sbo %{__signature_filename} --digest-algo sha256 %{__plaintext_filename}"; then
+        echo "Signature execution OK"
 
-echo "Signing RPMs with ci@rancher.com's GPG KEY"
+  else
+	echo "Signature execution NOK"
+	exit 1
+  fi
+  
+  # Output ONLY the signature status of the RPMs - true is used to return 0 and avoid the script to fail
+  # Possibe errors/messages:
+  # NO KEY: Indicates that the public key required to verify the RPM's signature is not installed on the OS.
+  # BAD: Indicates that the RPM file's signature is bad or corrupt.
+  # PGP signature NOT OK: Indicates the RPM's signature is not valid or has been tampered.
+  # OK: Indicates that the RPM's signature is valid.
+  rpm --checksig --verbose $rpm || true
 
-rpmsign --addsign dist/centos9/**/rancher-*.rpm --define "_gpg_name ci@rancher.com" --define "_gpgbin /usr/bin/gpg" --define "__gpg_sign_cmd %{__gpg} gpg --force-v3-sigs --batch  --no-armor --pinentry-mode loopback --passphrase "$PRIVATE_KEY_PASS_PHRASE" -u "%{_gpg_name}" -sbo %{__signature_filename} --digest-algo sha256 %{__plaintext_filename}"
-
-# Check signature in rpms
-for rpm in $(find dist/centos9/ -type f -name "*.rpm"); do rpm --checksig --verbose $rpm || true; done
+done
