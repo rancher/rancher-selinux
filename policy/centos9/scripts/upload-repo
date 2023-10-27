@@ -1,9 +1,11 @@
 #!/bin/bash
 set -e -x
 
-pushd $(dirname $0)/..
+cd $(dirname $0)/..
 . ./scripts/version
-popd
+
+# Package required to unzip awscliv2.zip
+yum install -y unzip
 
 # Install the awscli-v2 from AWS
 curl "https://awscli.amazonaws.com/awscli-exe-linux-$(uname -m).zip" -o "awscliv2.zip"
@@ -65,5 +67,5 @@ case "$RPM_CHANNEL" in
     ;;
 esac
 
-aws s3 cp /source/dist/centos9/noarch/rancher-*.rpm $AWS_S3_BUCKET/$TARGET_EL9_S3_PATH/
-aws s3 cp /source/dist/centos9/source/rancher-*src.rpm $AWS_S3_BUCKET/$TARGET_EL9_SOURCE_S3_PATH/
+aws s3 cp dist/noarch/rancher-*.rpm    $AWS_S3_BUCKET/$TARGET_EL9_S3_PATH/
+aws s3 cp dist/source/rancher-*src.rpm $AWS_S3_BUCKET/$TARGET_EL9_SOURCE_S3_PATH/
