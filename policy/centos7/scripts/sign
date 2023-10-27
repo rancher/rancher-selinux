@@ -1,32 +1,48 @@
 #!/bin/bash
-set -e -x
+set -e
 
-yum install -y rpm-sign expect git
+DRY_RUN=$1
+SIGN_KEY_EMAIL="ci@rancher.com"
 
-pushd $(dirname $0)/..
+export GPG_TTY=$(tty)
+
+yum install -y rpm-sign
+
+cd $(dirname $0)/..
 . ./scripts/version
-popd
 
-cat <<\EOF >~/.rpmmacros 
-%_signature gpg
-%_gpg_name ci@rancher.com
-EOF
+if [ "${DRY_RUN}" = "--dry-run" ]
+then
+	echo "!! Executing in dry-run mode"
+	echo "!! Generating a temporary disposable GPG key to test the signing"
+	echo "!! process (this is only useful when testing PRs)"
+
+	SIGN_KEY_EMAIL="disposable-ci-test-key"
+	TESTING_PRIVATE_KEY_PASS_PHRASE=$(cat /dev/urandom | tr -dc A-Za-z0-9 | head -c20)
+	RPM_CHANNEL="testing"
+
+	gpg --no-tty --quick-gen-key --pinentry-mode loopback --passphrase "$TESTING_PRIVATE_KEY_PASS_PHRASE" --yes "$SIGN_KEY_EMAIL" rsa2048
+
+	TESTING_PRIVATE_KEY=$(gpg --armor --pinentry-mode loopback --passphrase "$TESTING_PRIVATE_KEY_PASS_PHRASE" --export-secret-key "$SIGN_KEY_EMAIL")
+fi
 
 case "$RPM_CHANNEL" in
   "testing")
     export PRIVATE_KEY_PASS_PHRASE=$TESTING_PRIVATE_KEY_PASS_PHRASE
-    if ! grep "BEGIN PGP PRIVATE KEY BLOCK" <<<"$TESTING_PRIVATE_KEY"; then
+    if ! grep "BEGIN PGP PRIVATE KEY BLOCK" <<<"$TESTING_PRIVATE_KEY" > /dev/null; then
       echo "TESTING_PRIVATE_KEY not defined, failing rpm sign"
       exit 1
     fi
-    gpg --import - <<<"$TESTING_PRIVATE_KEY"
+    echo "Importing GPG private key TESTING_PRIVATE_KEY"
+    gpg --yes --pinentry-mode loopback --batch --passphrase $PRIVATE_KEY_PASS_PHRASE --import - <<< "$TESTING_PRIVATE_KEY"
     ;;
   "production")
-    if ! grep "BEGIN PGP PRIVATE KEY BLOCK" <<<"$PRIVATE_KEY"; then
+    if ! grep "BEGIN PGP PRIVATE KEY BLOCK" <<<"$PRIVATE_KEY" > /dev/null; then
       echo "PRIVATE_KEY not defined, failing rpm sign"
       exit 1
     fi
-    gpg --import - <<<"$PRIVATE_KEY"
+    echo "Importing GPG private key PRIVATE_KEY"
+    gpg --yes --batch --pinentry-mode loopback --passphrase $PRIVATE_KEY_PASS_PHRASE --import - <<< "$PRIVATE_KEY"
     ;;
   *)
     echo "RPM_CHANNEL $RPM_CHANNEL does not match one of: [testing, production]"
@@ -34,12 +50,22 @@ case "$RPM_CHANNEL" in
     ;;
 esac
 
-expect <<EOF
-set timeout 60
-spawn sh -c "rpmsign --addsign dist/centos7/**/rancher-*.rpm"
-expect "Enter pass phrase:"
-send -- "$PRIVATE_KEY_PASS_PHRASE\r"
-expect eof
-lassign [wait] _ _ _ code
-exit \$code
-EOF
+gpg --armor --export --output "$SIGN_KEY_EMAIL" "$SIGN_KEY_EMAIL"
+rpm --import "$SIGN_KEY_EMAIL"
+
+echo "Signing RPMs with ${SIGN_KEY_EMAIL} GPG KEY"
+rpmsign --addsign dist/**/rancher-*.rpm \
+        --define "_gpg_name ${SIGN_KEY_EMAIL}" \
+        --define "_gpgbin /usr/bin/gpg" \
+        --define "__gpg_sign_cmd %{__gpg} gpg \
+                  --batch \
+                  --no-armor \
+                  --pinentry-mode loopback \
+                  --passphrase ${PRIVATE_KEY_PASS_PHRASE} \
+                  -u %{_gpg_name} \
+                  -sbo %{__signature_filename} \
+                  --digest-algo sha256 %{__plaintext_filename}"
+
+echo "Verifying RPMs signatures"
+rpm --checksig --verbose dist/**/rancher-*.rpm
+

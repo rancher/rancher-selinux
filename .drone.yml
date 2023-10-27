@@ -7,13 +7,21 @@ platform:
   arch: amd64
 
 steps:
-- name: Build EL7
-  image: rancher/dapper:v0.6.0
+- name: Build RPM EL7
+  image: centos:7
   commands:
-  - dapper -f Dockerfile.centos7.dapper policy/centos7/scripts/build
+  - policy/centos7/scripts/build
   volumes:
   - name: docker
     path: /var/run/docker.sock
+
+- name: Sign RPM EL7 (dry-run)
+  image: centos:7
+  commands:
+  - policy/centos7/scripts/sign --dry-run
+  when:
+    event:
+    - pull_request
 
 - name: Sign RPM EL7
   image: centos:7
@@ -37,7 +45,7 @@ steps:
     event:
     - tag
 
-- name: Yum Repo Upload EL7
+- name: Upload RPM EL7
   image: centos:7
   environment:
     AWS_S3_BUCKET:
@@ -63,7 +71,7 @@ steps:
     event:
     - tag
 
-- name: GitHub Release EL7
+- name: GitHub Release RPM EL7
   image: ibuildthecloud/github-release:v0.0.1
   settings:
     api_key:
@@ -74,7 +82,7 @@ steps:
     checksum_file: CHECKSUMsum-centos7-noarch.txt
     checksum_flatten: true
     files:
-    - "dist/centos7/**/*.rpm"
+    - "policy/centos7/dist/**/*.rpm"
   when:
     instance:
     - drone-publish.rancher.io
