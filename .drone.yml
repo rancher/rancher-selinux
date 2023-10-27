@@ -187,13 +187,21 @@ platform:
   arch: amd64
 
 steps:
-- name: Build EL9
-  image: rancher/dapper:v0.6.0
+- name: Build RPM EL9
+  image: quay.io/centos/centos:stream9
   commands:
-  - dapper -f Dockerfile.centos9.dapper policy/centos9/scripts/build
+  - policy/centos9/scripts/build
   volumes:
   - name: docker
     path: /var/run/docker.sock
+
+- name: Sign RPM EL9 (dry-run)
+  image: quay.io/centos/centos:stream9
+  commands:
+  - policy/centos9/scripts/sign --dry-run
+  when:
+    event:
+    - pull_request
 
 - name: Sign RPM EL9
   image: quay.io/centos/centos:stream9
@@ -217,7 +225,7 @@ steps:
     event:
     - tag
 
-- name: Yum Repo Upload EL9
+- name: Upload RPM EL9
   image: quay.io/centos/centos:stream9
   environment:
     AWS_S3_BUCKET:
@@ -243,7 +251,7 @@ steps:
     event:
     - tag
 
-- name: GitHub Release EL9
+- name: GitHub Release RPM EL9
   image: ibuildthecloud/github-release:v0.0.1
   settings:
     api_key:
@@ -254,7 +262,7 @@ steps:
     checksum_file: CHECKSUMsum-centos9-noarch.txt
     checksum_flatten: true
     files:
-    - "dist/centos9/**/*.rpm"
+    - "policy/centos9/dist/**/*.rpm"
   when:
     instance:
     - drone-publish.rancher.io
@@ -268,6 +276,7 @@ volumes:
 - name: docker
   host:
     path: /var/run/docker.sock
+
 ---
 kind: pipeline
 name: RPM Build MicroOS
