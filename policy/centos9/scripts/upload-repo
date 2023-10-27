@@ -67,5 +67,6 @@ case "$RPM_CHANNEL" in
     ;;
 esac
 
-aws s3 cp dist/noarch/rancher-*.rpm    $AWS_S3_BUCKET/$TARGET_EL9_S3_PATH/
-aws s3 cp dist/source/rancher-*src.rpm $AWS_S3_BUCKET/$TARGET_EL9_SOURCE_S3_PATH/
+aws s3 cp dist/noarch/rancher-*.rpm    s3://"$AWS_S3_BUCKET"/"$TARGET_EL9_S3_PATH"/
+aws s3 cp dist/source/rancher-*src.rpm s3://"$AWS_S3_BUCKET"/"$TARGET_EL9_SOURCE_S3_PATH"/
+
