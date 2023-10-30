@@ -10,6 +10,6 @@ yum install -y createrepo_c
 
 for dir in "${DIRS[@]}"; do
 	echo "Creating repository metadata for $dir"
-	createrepo "dist/$dir/"
+	createrepo_c "dist/$dir/"
 done
 
