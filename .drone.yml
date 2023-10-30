@@ -191,9 +191,6 @@ steps:
   image: quay.io/centos/centos:stream9
   commands:
   - policy/centos9/scripts/build
-  volumes:
-  - name: docker
-    path: /var/run/docker.sock
 
 - name: Sign RPM EL9 (dry-run)
   image: quay.io/centos/centos:stream9
@@ -224,6 +221,11 @@ steps:
     - refs/tags/*
     event:
     - tag
+
+- name: Create repo metadata for EL9
+  image: quay.io/centos/centos:stream9
+  commands:
+  - policy/centos9/scripts/repo-metadata
 
 - name: Upload RPM EL9
   image: quay.io/centos/centos:stream9
@@ -271,11 +273,6 @@ steps:
     - refs/tags/*
     event:
     - tag
-
-volumes:
-- name: docker
-  host:
-    path: /var/run/docker.sock
 
 ---
 kind: pipeline
