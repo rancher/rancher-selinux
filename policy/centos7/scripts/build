@@ -5,7 +5,7 @@ cd $(dirname $0)/..
 . ./scripts/version
 
 yum install -y epel-release
-yum install -y container-selinux selinux-policy-devel yum-utils rpm-build # git
+yum install -y container-selinux selinux-policy-devel yum-utils rpm-build
 
 make -f /usr/share/selinux/devel/Makefile rancher.pp
 

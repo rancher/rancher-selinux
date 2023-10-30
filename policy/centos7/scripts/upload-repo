@@ -9,7 +9,7 @@ yum install -y unzip
 
 # Install the awscli-v2 from AWS
 curl "https://awscli.amazonaws.com/awscli-exe-linux-$(uname -m).zip" -o "awscliv2.zip"
-unzip awscliv2.zip
+unzip -q  awscliv2.zip
 ./aws/install
 
 # Test if awscli-v2 is installed 
@@ -67,6 +67,6 @@ case "$RPM_CHANNEL" in
     ;;
 esac
 
-aws s3 cp dist/noarch/rancher-*.rpm    s3://"$AWS_S3_BUCKET"/"$TARGET_EL7_S3_PATH"/
-aws s3 cp dist/source/rancher-*src.rpm s3://"$AWS_S3_BUCKET"/"$TARGET_EL7_SOURCE_S3_PATH"/
+aws s3 cp dist/noarch s3://"$AWS_S3_BUCKET"/"$TARGET_EL7_S3_PATH"/ --recursive
+aws s3 cp dist/source s3://"$AWS_S3_BUCKET"/"$TARGET_EL7_SOURCE_S3_PATH"/ --recursive
 

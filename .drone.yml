@@ -11,17 +11,6 @@ steps:
   image: centos:7
   commands:
   - policy/centos7/scripts/build
-  volumes:
-  - name: docker
-    path: /var/run/docker.sock
-
-- name: Sign RPM EL7 (dry-run)
-  image: centos:7
-  commands:
-  - policy/centos7/scripts/sign --dry-run
-  when:
-    event:
-    - pull_request
 
 - name: Sign RPM EL7
   image: centos:7
@@ -44,6 +33,11 @@ steps:
     - refs/tags/*
     event:
     - tag
+
+- name: Create repo metadata for EL7
+  image: centos:7
+  commands:
+  - policy/centos7/scripts/repo-metadata
 
 - name: Upload RPM EL7
   image: centos:7
@@ -91,11 +85,6 @@ steps:
     - refs/tags/*
     event:
     - tag
-
-volumes:
-- name: docker
-  host:
-    path: /var/run/docker.sock
 ---
 kind: pipeline
 name: RPM Build EL8
