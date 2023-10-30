@@ -94,13 +94,18 @@ platform:
   arch: amd64
 
 steps:
-- name: Build EL8
-  image: rancher/dapper:v0.6.0
+- name: Build RPM EL8
+  image: quay.io/centos/centos:stream8
   commands:
-  - dapper -f Dockerfile.centos8.dapper policy/centos8/scripts/build
-  volumes:
-  - name: docker
-    path: /var/run/docker.sock
+  - policy/centos8/scripts/build
+
+- name: Sign RPM EL8 (dry-run)
+  image: quay.io/centos/centos:stream8
+  commands:
+  - policy/centos8/scripts/sign --dry-run
+  when:
+    event:
+    - pull_request
 
 - name: Sign RPM EL8
   image: quay.io/centos/centos:stream8
@@ -124,7 +129,12 @@ steps:
     event:
     - tag
 
-- name: Yum Repo Upload EL8
+- name: Create repo metadata for EL8
+  image: quay.io/centos/centos:stream8
+  commands:
+  - policy/centos8/scripts/repo-metadata
+
+- name: Yum Repo Upload RPM EL8
   image: quay.io/centos/centos:stream8
   environment:
     AWS_S3_BUCKET:
@@ -150,7 +160,7 @@ steps:
     event:
     - tag
 
-- name: GitHub Release EL8
+- name: GitHub Release RPM EL8
   image: ibuildthecloud/github-release:v0.0.1
   settings:
     api_key:
@@ -171,10 +181,6 @@ steps:
     event:
     - tag
 
-volumes:
-- name: docker
-  host:
-    path: /var/run/docker.sock
 ---
 kind: pipeline
 name: RPM Build EL9
