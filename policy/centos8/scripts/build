@@ -4,6 +4,9 @@ set -e -x
 cd $(dirname $0)/..
 . ./scripts/version
 
+yum install -y epel-release
+yum install -y container-selinux selinux-policy-devel yum-utils rpm-build
+
 make -f /usr/share/selinux/devel/Makefile rancher.pp
 
 rpmbuild \
@@ -17,5 +20,3 @@ rpmbuild \
     --define "_rpmdir ${PWD}/dist" \
     -ba rancher-selinux.spec
 
-mkdir -p /source/dist/centos8
-cp -r dist/* /source/dist/centos8

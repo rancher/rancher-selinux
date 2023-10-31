@@ -7,13 +7,10 @@ platform:
   arch: amd64
 
 steps:
-- name: Build EL7
-  image: rancher/dapper:v0.6.0
+- name: Build RPM EL7
+  image: centos:7
   commands:
-  - dapper -f Dockerfile.centos7.dapper policy/centos7/scripts/build
-  volumes:
-  - name: docker
-    path: /var/run/docker.sock
+  - policy/centos7/scripts/build
 
 - name: Sign RPM EL7
   image: centos:7
@@ -37,7 +34,12 @@ steps:
     event:
     - tag
 
-- name: Yum Repo Upload EL7
+- name: Create repo metadata for EL7
+  image: centos:7
+  commands:
+  - policy/centos7/scripts/repo-metadata
+
+- name: Upload RPM EL7
   image: centos:7
   environment:
     AWS_S3_BUCKET:
@@ -63,7 +65,7 @@ steps:
     event:
     - tag
 
-- name: GitHub Release EL7
+- name: GitHub Release RPM EL7
   image: ibuildthecloud/github-release:v0.0.1
   settings:
     api_key:
@@ -74,7 +76,7 @@ steps:
     checksum_file: CHECKSUMsum-centos7-noarch.txt
     checksum_flatten: true
     files:
-    - "dist/centos7/**/*.rpm"
+    - "policy/centos7/dist/**/*.rpm"
   when:
     instance:
     - drone-publish.rancher.io
@@ -83,11 +85,6 @@ steps:
     - refs/tags/*
     event:
     - tag
-
-volumes:
-- name: docker
-  host:
-    path: /var/run/docker.sock
 ---
 kind: pipeline
 name: RPM Build EL8
@@ -97,13 +94,18 @@ platform:
   arch: amd64
 
 steps:
-- name: Build EL8
-  image: rancher/dapper:v0.6.0
+- name: Build RPM EL8
+  image: quay.io/centos/centos:stream8
   commands:
-  - dapper -f Dockerfile.centos8.dapper policy/centos8/scripts/build
-  volumes:
-  - name: docker
-    path: /var/run/docker.sock
+  - policy/centos8/scripts/build
+
+- name: Sign RPM EL8 (dry-run)
+  image: quay.io/centos/centos:stream8
+  commands:
+  - policy/centos8/scripts/sign --dry-run
+  when:
+    event:
+    - pull_request
 
 - name: Sign RPM EL8
   image: quay.io/centos/centos:stream8
@@ -127,7 +129,12 @@ steps:
     event:
     - tag
 
-- name: Yum Repo Upload EL8
+- name: Create repo metadata for EL8
+  image: quay.io/centos/centos:stream8
+  commands:
+  - policy/centos8/scripts/repo-metadata
+
+- name: Yum Repo Upload RPM EL8
   image: quay.io/centos/centos:stream8
   environment:
     AWS_S3_BUCKET:
@@ -153,7 +160,7 @@ steps:
     event:
     - tag
 
-- name: GitHub Release EL8
+- name: GitHub Release RPM EL8
   image: ibuildthecloud/github-release:v0.0.1
   settings:
     api_key:
@@ -164,7 +171,7 @@ steps:
     checksum_file: CHECKSUMsum-centos8-noarch.txt
     checksum_flatten: true
     files:
-    - "dist/centos8/**/*.rpm"
+    - "policy/centos8/dist/**/*.rpm"
   when:
     instance:
     - drone-publish.rancher.io
@@ -174,10 +181,6 @@ steps:
     event:
     - tag
 
-volumes:
-- name: docker
-  host:
-    path: /var/run/docker.sock
 ---
 kind: pipeline
 name: RPM Build EL9
@@ -283,16 +286,21 @@ platform:
   arch: amd64
 
 steps:
-- name: Build MicroOS
-  image: rancher/dapper:v0.6.0
+- name: Build RPM MicroOS
+  image: opensuse/tumbleweed
   commands:
-  - dapper -f Dockerfile.microos.dapper policy/microos/scripts/build
-  volumes:
-  - name: docker
-    path: /var/run/docker.sock
+  - policy/microos/scripts/build
+
+- name: Sign RPM MicroOS (dry-run)
+  image: opensuse/tumbleweed
+  commands:
+  - policy/microos/scripts/sign --dry-run
+  when:
+    event:
+    - pull_request
 
 - name: Sign RPM MicroOS
-  image: centos:7
+  image: opensuse/tumbleweed
   environment:
     PRIVATE_KEY:
       from_secret: private_key
@@ -313,8 +321,13 @@ steps:
     event:
     - tag
 
-- name: Yum Repo Upload MicroOS
-  image: centos:7
+- name: Create repo metadata for Microos
+  image: opensuse/tumbleweed
+  commands:
+  - policy/microos/scripts/repo-metadata
+
+- name: Yum Repo Upload RPM MicroOS
+  image: opensuse/tumbleweed
   environment:
     AWS_S3_BUCKET:
       from_secret: aws_s3_bucket
@@ -339,8 +352,8 @@ steps:
     event:
     - tag
 
-- name: GitHub Release MicroOS
-  image: ibuildthecloud/github-release:v0.0.1
+- name: GitHub Release RPM MicroOS
+  image: opensuse/tumbleweed
   settings:
     api_key:
       from_secret: github_token
@@ -350,7 +363,7 @@ steps:
     checksum_file: CHECKSUMsum-microos-noarch.txt
     checksum_flatten: true
     files:
-    - "dist/microos/**/*.rpm"
+    - "policy/microos/dist/**/*.rpm"
   when:
     instance:
     - drone-publish.rancher.io
@@ -359,8 +372,3 @@ steps:
     - refs/tags/*
     event:
     - tag
-
-volumes:
-- name: docker
-  host:
-    path: /var/run/docker.sock

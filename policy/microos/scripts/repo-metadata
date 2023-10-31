@@ -6,7 +6,7 @@ DIRS=("noarch" "source")
 cd $(dirname $0)/..
 . ./scripts/version
 
-yum install -y createrepo_c
+zypper install -y createrepo_c
 
 for dir in "${DIRS[@]}"; do
 	echo "Creating repository metadata for $dir"
