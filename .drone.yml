@@ -66,7 +66,7 @@ steps:
     - tag
 
 - name: GitHub Release RPM EL7
-  image: ibuildthecloud/github-release:v0.0.1
+  image: plugins/github-release
   settings:
     api_key:
       from_secret: github_token
@@ -161,7 +161,7 @@ steps:
     - tag
 
 - name: GitHub Release RPM EL8
-  image: ibuildthecloud/github-release:v0.0.1
+  image: plugins/github-release
   settings:
     api_key:
       from_secret: github_token
@@ -257,7 +257,7 @@ steps:
     - tag
 
 - name: GitHub Release RPM EL9
-  image: ibuildthecloud/github-release:v0.0.1
+  image: plugins/github-release
   settings:
     api_key:
       from_secret: github_token
@@ -353,7 +353,7 @@ steps:
     - tag
 
 - name: GitHub Release RPM MicroOS
-  image: opensuse/tumbleweed
+  image: plugins/github-release
   settings:
     api_key:
       from_secret: github_token

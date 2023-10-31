@@ -18,6 +18,3 @@ rpmbuild \
     --define "_buildrootdir $PWD/.build" \
     --define "_rpmdir ${PWD}/dist" \
     -ba rancher-selinux.spec
-
-mkdir -p /source/dist/microos
-cp -r dist/* /source/dist/microos
