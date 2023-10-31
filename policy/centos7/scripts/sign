@@ -3,9 +3,8 @@ set -e -x
 
 yum install -y rpm-sign expect
 
-pushd $(dirname $0)/..
+cd $(dirname $0)/..
 . ./scripts/version
-popd
 
 cat <<\EOF >~/.rpmmacros 
 %_signature gpg
