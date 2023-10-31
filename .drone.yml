@@ -353,7 +353,7 @@ steps:
     - tag
 
 - name: GitHub Release RPM MicroOS
-  image: opensuse/tumbleweed
+  image: ibuildthecloud/github-release:v0.0.1
   settings:
     api_key:
       from_secret: github_token
