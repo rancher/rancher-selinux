@@ -171,7 +171,7 @@ steps:
     checksum_file: CHECKSUMsum-centos8-noarch.txt
     checksum_flatten: true
     files:
-    - "dist/centos8/**/*.rpm"
+    - "policy/centos8/dist/**/*.rpm"
   when:
     instance:
     - drone-publish.rancher.io
@@ -363,7 +363,7 @@ steps:
     checksum_file: CHECKSUMsum-microos-noarch.txt
     checksum_flatten: true
     files:
-    - "dist/microos/**/*.rpm"
+    - "policy/microos/dist/**/*.rpm"
   when:
     instance:
     - drone-publish.rancher.io
