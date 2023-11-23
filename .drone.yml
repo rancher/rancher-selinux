@@ -372,3 +372,99 @@ steps:
     - refs/tags/*
     event:
     - tag
+
+---
+kind: pipeline
+name: RPM Build Fedora37
+
+platform:
+  os: linux
+  arch: amd64
+
+steps:
+- name: Build RPM Fedora37
+  image: fedora:37
+  commands:
+  - policy/fedora37/scripts/build
+
+- name: Sign RPM Fedora37 (dry-run)
+  image: fedora:37
+  commands:
+  - policy/fedora37/scripts/sign --dry-run
+  when:
+    event:
+    - pull_request
+
+- name: Sign RPM Fedora37
+  image: fedora:37
+  environment:
+    PRIVATE_KEY:
+      from_secret: private_key
+    PRIVATE_KEY_PASS_PHRASE:
+      from_secret: private_key_pass_phrase
+    TESTING_PRIVATE_KEY:
+      from_secret: testing_private_key
+    TESTING_PRIVATE_KEY_PASS_PHRASE:
+      from_secret: testing_private_key_pass_phrase
+  commands:
+  - policy/fedora37/scripts/sign
+  when:
+    instance:
+    - drone-publish.rancher.io
+    ref:
+    - refs/head/master
+    - refs/tags/*
+    event:
+    - tag
+
+- name: Create repo metadata for Fedora37
+  image: fedora:37
+  commands:
+  - policy/fedora37/scripts/repo-metadata
+
+- name: Yum Repo Upload Fedora37
+  image: fedora:37
+  environment:
+    AWS_S3_BUCKET:
+      from_secret: aws_s3_bucket
+    AWS_ACCESS_KEY_ID:
+      from_secret: aws_access_key_id
+    AWS_SECRET_ACCESS_KEY:
+      from_secret: aws_secret_access_key
+    TESTING_AWS_S3_BUCKET:
+      from_secret: testing_aws_s3_bucket
+    TESTING_AWS_ACCESS_KEY_ID:
+      from_secret: testing_aws_access_key_id
+    TESTING_AWS_SECRET_ACCESS_KEY:
+      from_secret: testing_aws_secret_access_key
+  commands:
+  - policy/fedora37/scripts/upload-repo
+  when:
+    instance:
+    - drone-publish.rancher.io
+    ref:
+    - refs/head/master
+    - refs/tags/*
+    event:
+    - tag
+
+- name: GitHub Release Fedora37
+  image: plugins/github-release
+  settings:
+    api_key:
+      from_secret: github_token
+    prerelease: true
+    checksum:
+    - sha256
+    checksum_file: CHECKSUMsum-fedora37-noarch.txt
+    checksum_flatten: true
+    files:
+    - "policy/fedora37/dist/**/*.rpm"
+  when:
+    instance:
+    - drone-publish.rancher.io
+    ref:
+    - refs/head/master
+    - refs/tags/*
+    event:
+    - tag
