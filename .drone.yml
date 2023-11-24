@@ -383,12 +383,12 @@ platform:
 
 steps:
 - name: Build RPM Fedora37
-  image: fedora:37
+  image: fedora:40
   commands:
   - policy/fedora37/scripts/build
 
 - name: Sign RPM Fedora37 (dry-run)
-  image: fedora:37
+  image: fedora:40
   commands:
   - policy/fedora37/scripts/sign --dry-run
   when:
@@ -396,7 +396,7 @@ steps:
     - pull_request
 
 - name: Sign RPM Fedora37
-  image: fedora:37
+  image: fedora:40
   environment:
     PRIVATE_KEY:
       from_secret: private_key
@@ -418,12 +418,12 @@ steps:
     - tag
 
 - name: Create repo metadata for Fedora37
-  image: fedora:37
+  image: fedora:40
   commands:
   - policy/fedora37/scripts/repo-metadata
 
 - name: Yum Repo Upload Fedora37
-  image: fedora:37
+  image: fedora:40
   environment:
     AWS_S3_BUCKET:
       from_secret: aws_s3_bucket
