@@ -31,7 +31,7 @@ gen_require(`
         type syslogd_var_run_t;
         type var_log_t;
         class dir { read search };
-        class file { open read };
+        class file { getattr map open read watch };
         class lnk_file { getattr read };
 ')
 container_domain_template(rke_logreader, container)
