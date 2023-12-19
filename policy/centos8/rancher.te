@@ -41,7 +41,7 @@ allow rke_logreader_t container_log_t:dir { open read search };
 allow rke_logreader_t container_log_t:lnk_file { getattr read };
 allow rke_logreader_t container_log_t:file { getattr open read watch };
 allow rke_logreader_t container_var_lib_t:dir search;
-allow rke_logreader_t container_var_lib_t:file { getattr open read };
+allow rke_logreader_t container_var_lib_t:file { getattr open read watch };
 allow rke_logreader_t container_var_lib_t:lnk_file { getattr read };
 allow rke_logreader_t syslogd_var_run_t:dir read;
 allow rke_logreader_t syslogd_var_run_t:file { getattr map open read };
