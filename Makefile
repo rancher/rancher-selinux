@@ -1,29 +1,27 @@
-CENTOS7_TARGETS := $(addprefix centos7-,$(shell ls policy/centos7/scripts))
-CENTOS8_TARGETS := $(addprefix centos8-,$(shell ls policy/centos8/scripts))
-CENTOS9_TARGETS := $(addprefix centos9-,$(shell ls policy/centos9/scripts))
-MICROOS_TARGETS := $(addprefix microos-,$(shell ls policy/microos/scripts))
-FEDORA37_TARGETS := $(addprefix fedora37-,$(shell ls policy/fedora37/scripts))
+RUNNER ?= docker
 
-.dapper:
-	@echo Downloading dapper
-	@curl -sL https://releases.rancher.com/dapper/latest/dapper-$$(uname -s)-$$(uname -m) > .dapper.tmp
-	@@chmod +x .dapper.tmp
-	@./.dapper.tmp -v
-	@mv .dapper.tmp .dapper
+POLICIES=$(shell find policy -mindepth 2 -maxdepth 2 -type f -name 'Dockerfile' | sort -u | cut -f 2 -d'/')
 
-$(CENTOS7_TARGETS): .dapper
-	./.dapper -f Dockerfile.centos7.dapper $(@:centos7-%=%)
+RPM_VERSION := v0.1.1
+RPM_RELEASE := testing
 
-$(CENTOS8_TARGETS): .dapper
-	./.dapper -f Dockerfile.centos8.dapper $(@:centos8-%=%)
+.PHONY: build
+build:
+	$(MAKE) $(addsuffix -build-clean, $(POLICIES))
+	$(MAKE) $(addsuffix -build-image, $(POLICIES))
+	$(MAKE) $(addsuffix -build-artefacts, $(POLICIES))
 
-$(CENTOS9_TARGETS): .dapper
-	./.dapper -f Dockerfile.centos9.dapper $(@:centos9-%=%)
+%-build-image:
+	$(RUNNER) build --build-arg POLICY=$(subst :,/,$*) \
+		-t rancher-selinux:$(subst :,/,$*) -f policy/$(subst :,/,$*)/Dockerfile .
 
-$(MICROOS_TARGETS): .dapper
-	./.dapper -f Dockerfile.microos.dapper $(@:microos-%=%)
+%-build-clean:
+	rm -rf $(shell pwd)/build/$(subst :,/,$*)
+	mkdir -p $(shell pwd)/build/$(subst :,/,$*)
 
-$(FEDORA37_TARGETS): .dapper
-	./.dapper -f Dockerfile.fedora37.dapper $(@:fedora37-%=%)
-
-.PHONY: $(CENTOS7_TARGETS) $(CENTOS8_TARGETS) $(CENTOS9_TARGETS) $(MICROOS_TARGETS) $(FEDORA37_TARGETS)
+%-build-artefacts:
+	$(RUNNER) run --rm \
+		-e USER=$(shell id -u) -e GROUP=$(shell id -g) \
+		-v $(shell pwd)/build/$(subst :,/,$*):/out \
+		--workdir /src \
+		rancher-selinux:$(subst :,/,$*) ./build $(RPM_VERSION) $(RPM_RELEASE)

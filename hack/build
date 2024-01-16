@@ -1,0 +1,36 @@
+#!/bin/bash
+set -eoux pipefail
+
+OUTDIR="${OUTDIR:-/out}"
+USER="${USER:-1000}"
+GROUP="${GROUP:-1000}"
+
+function build(){
+    local RPM_VERSION=$1
+    local RPM_RELEASE=$2
+
+    make -f /usr/share/selinux/devel/Makefile rancher.pp
+
+    rpmbuild \
+        --define "rancher_selinux_version ${RPM_VERSION}" \
+        --define "rancher_selinux_release ${RPM_RELEASE}" \
+        --define "_sourcedir $PWD" \
+        --define "_specdir $PWD" \
+        --define "_builddir $PWD" \
+        --define "_srcrpmdir ${OUTDIR}/source" \
+        --define "_buildrootdir $PWD/.build" \
+        --define "_rpmdir ${OUTDIR}/dist" \
+        -ba rancher-selinux.spec
+}
+
+function main(){
+    build "$1" "$2"
+    chown -R "${USER}:${GROUP}" "${OUTDIR}/"
+}
+
+if [ "$#" -ne 2 ]; then
+    echo "usage: $0 <RPM_VERSION> <RPM_RELEASE>"
+    exit 1
+fi
+
+main "$1" "$2"
