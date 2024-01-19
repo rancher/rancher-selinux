@@ -6,9 +6,12 @@ include hack/make/version.mk
 
 .PHONY: build
 build:
-	$(MAKE) $(addsuffix -build-clean, $(POLICIES))
-	$(MAKE) $(addsuffix -build-image, $(POLICIES))
-	$(MAKE) $(addsuffix -build-artefacts, $(POLICIES))
+	$(MAKE) $(addsuffix -build, $(POLICIES))
+
+%-build: version
+	$(MAKE) $(subst :,/,$*)-build-clean
+	$(MAKE) $(subst :,/,$*)-build-image
+	$(MAKE) $(subst :,/,$*)-build-artefacts
 
 %-build-image:
 	$(RUNNER) build --build-arg POLICY=$(subst :,/,$*) \
