@@ -2,8 +2,7 @@ RUNNER ?= docker
 
 POLICIES=$(shell find policy -mindepth 2 -maxdepth 2 -type f -name 'Dockerfile' | sort -u | cut -f 2 -d'/')
 
-RPM_VERSION := v0.1.1
-RPM_RELEASE := testing
+include hack/make/version.mk
 
 .PHONY: build
 build:
@@ -25,3 +24,15 @@ build:
 		-v $(shell pwd)/build/$(subst :,/,$*):/out \
 		--workdir /src \
 		rancher-selinux:$(subst :,/,$*) ./build $(RPM_VERSION) $(RPM_RELEASE)
+
+version:
+ifdef VERSION_MSG
+	@echo  $(VERSION_MSG); exit 1
+endif
+
+	@echo Version Information
+	@echo 
+	@echo RPM_VERSION: $(RPM_VERSION)
+	@echo RPM_RELEASE: $(RPM_RELEASE)
+	@echo RPM_CHANNEL: $(RPM_CHANNEL)
+	@echo VERSION: $(VERSION)
