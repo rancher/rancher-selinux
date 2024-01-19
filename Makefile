@@ -1,6 +1,6 @@
 RUNNER ?= docker
 
-POLICIES=$(shell find policy -mindepth 2 -maxdepth 2 -type f -name 'Dockerfile' | sort -u | cut -f 2 -d'/')
+POLICIES=$(shell find policy -mindepth 2 -maxdepth 2 -type d | sort -u | cut -f 2 -d'/')
 
 include hack/make/version.mk
 
@@ -15,7 +15,7 @@ build:
 
 %-build-image:
 	$(RUNNER) build --build-arg POLICY=$(subst :,/,$*) \
-		-t rancher-selinux:$(subst :,/,$*) -f policy/$(subst :,/,$*)/Dockerfile .
+		-t rancher-selinux:$(subst :,/,$*) -f Dockerfile .
 
 %-build-clean:
 	rm -rf $(shell pwd)/build/$(subst :,/,$*)
