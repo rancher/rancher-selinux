@@ -19,7 +19,7 @@ function build(){
         --define "_builddir $PWD" \
         --define "_srcrpmdir ${OUTDIR}/source" \
         --define "_buildrootdir $PWD/.build" \
-        --define "_rpmdir ${OUTDIR}/dist" \
+        --define "_rpmdir ${OUTDIR}" \
         -ba rancher-selinux.spec
 }
 
