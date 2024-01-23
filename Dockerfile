@@ -12,7 +12,8 @@ RUN yum install -y \
         selinux-policy-devel \
         yum-utils \
         rpm-build \
-        rpm-sign expect
+        rpm-sign expect \
+        unzip
 
 # Confirm this is needed, move to final if not.
 COPY hack/centos7_sign /usr/local/bin/sign
@@ -25,7 +26,8 @@ RUN yum install -y \
         selinux-policy-devel \
         yum-utils \
         rpm-build \
-        rpm-sign
+        rpm-sign \
+        unzip
 
 # Move to final stage if centos7_sign is removed.
 COPY hack/sign /usr/local/bin/sign
@@ -38,7 +40,8 @@ RUN yum install -y \
         selinux-policy-devel \
         yum-utils \
         rpm-build \
-        rpm-sign
+        rpm-sign \
+        unzip
 
 # Move to final stage if centos7_sign is removed.
 COPY hack/sign /usr/local/bin/sign
@@ -48,7 +51,9 @@ RUN dnf install -y \
         createrepo_c \
         container-selinux \
         selinux-policy-devel \
-        rpm-build
+        rpm-build \
+        rpm-sign \
+        unzip
 
 # Move to final stage if centos7_sign is removed.
 COPY hack/sign /usr/local/bin/sign
@@ -57,7 +62,9 @@ FROM opensuse/tumbleweed as microos
 RUN zypper install -y \
         container-selinux \
         selinux-policy-devel \
-        rpm-build
+        rpm-build \
+        rpm \
+        unzip
 
 # libglib is required to install createrepo_c in Tumbleweed.
 RUN zypper install -y libglib-2_0-0 createrepo_c

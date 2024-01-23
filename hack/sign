@@ -1,0 +1,92 @@
+#!/bin/bash
+set -eo pipefail
+
+PASSPHRASE_VAR=""
+
+function dryrun() {
+  	export SIGN_KEY_EMAIL="disposable-ci-test-key"
+		export TESTING_PRIVATE_KEY_PASS_PHRASE=$(cat /dev/urandom | tr -dc A-Za-z0-9 | head -c20)
+    export PASSPHRASE_VAR=TESTING_PRIVATE_KEY_PASS_PHRASE
+		
+    gpg --quiet --no-tty --pinentry-mode loopback --passphrase "${TESTING_PRIVATE_KEY_PASS_PHRASE}" \
+      --quick-gen-key --yes "${SIGN_KEY_EMAIL}" rsa2048
+
+    sign_rpms
+    verify_signatures
+}
+
+function check_vars()
+{
+    echo "checking for required vars"
+
+    local required_vars
+    required_vars=(SIGN_KEY_EMAIL RPM_CHANNEL)
+
+    for var in "${required_vars[@]}"; do
+        [ -z "${!var}" ] && echo "$var is not set." && var_unset=true
+    done
+
+    [ -n "${var_unset}" ] && exit 1
+    return 0
+}
+
+function check_channel(){
+    case "${RPM_CHANNEL}" in
+      "testing")
+        PASSPHRASE_VAR="TESTING_PRIVATE_KEY_PASS_PHRASE"
+        KEY_VAR="TESTING_PRIVATE_KEY"
+        ;;
+      "production")
+        PASSPHRASE_VAR="PRIVATE_KEY_PASS_PHRASE"
+        KEY_VAR="PRIVATE_KEY"
+        ;;
+      *)
+        echo "RPM_CHANNEL ${RPM_CHANNEL} does not match one of: [testing, production]"
+        exit 1
+        ;;
+    esac
+
+    if ! grep "BEGIN PGP PRIVATE KEY BLOCK" <<<"${!KEY_VAR}" > /dev/null; then
+      echo "${KEY_VAR} not defined, failing rpm sign"
+      exit 1
+    fi
+    echo "Importing GPG private key ${KEY_VAR}"
+    gpg --yes --pinentry-mode loopback --batch --passphrase "${!PASSPHRASE_VAR}" --import - <<< "${TESTING_PRIVATE_KEY}"
+    echo "Signing keys imported successfully"
+}
+
+function sign_rpms(){
+    gpg --armor --export --output "${SIGN_KEY_EMAIL}" "${SIGN_KEY_EMAIL}"
+    rpm --import "${SIGN_KEY_EMAIL}"
+
+    echo "Signing RPMs with ${SIGN_KEY_EMAIL} GPG KEY"
+    rpmsign --addsign /dist/**/rancher-*.rpm \
+            --define "_gpg_name ${SIGN_KEY_EMAIL}" \
+            --define "_gpgbin /usr/bin/gpg" \
+            --define "__gpg_sign_cmd %{__gpg} gpg \
+                      --batch \
+                      --no-armor \
+                      --pinentry-mode loopback \
+                      --passphrase ${!PASSPHRASE_VAR} \
+                      -u %{_gpg_name} \
+                      -sbo %{__signature_filename} \
+                      --digest-algo sha256 %{__plaintext_filename}"
+}
+
+function verify_signatures(){
+    echo "Verifying RPMs signatures"
+    rpm --checksig --verbose /dist/**/rancher-*.rpm
+}
+
+function main (){
+  check_vars
+  check_channel
+  sign_rpms
+  verify_signatures
+}
+
+if [[ "$1" == "--dry-run" ]]; then
+  dryrun
+else
+  main
+fi
