@@ -1,12 +1,21 @@
 RUNNER ?= docker
-POLICIES = $(shell find policy -mindepth 2 -maxdepth 2 -type d | sort -u | cut -f 2 -d'/')
+POLICIES = $(shell find policy -mindepth 1 -maxdepth 1 -type d | sort -u | cut -f 2 -d'/')
 
+# GPG Signing
 DRY_RUN ?= false
 SIGN_KEY_EMAIL ?= ci@rancher.com
 PRIVATE_KEY ?=
 PRIVATE_KEY_PASS_PHRASE ?=
 TESTING_PRIVATE_KEY ?= 
 TESTING_PRIVATE_KEY_PASS_PHRASE ?=
+
+# S3 Upload
+TESTING_AWS_ACCESS_KEY_ID ?=
+TESTING_AWS_SECRET_ACCESS_KEY ?=
+TESTING_AWS_S3_BUCKET ?=
+PRODUCTION_AWS_ACCESS_KEY_ID ?=
+PRODUCTION_AWS_SECRET_ACCESS_KEY ?=
+PRODUCTION_AWS_S3_BUCKET ?=
 
 ifeq ($(DRY_RUN),true)
 	DRY_RUN_SIGN := --dry-run
@@ -15,6 +24,7 @@ endif
 SHELL := /bin/bash
 
 include hack/make/version.mk
+include hack/make/tools.mk
 
 .PHONY: build
 build: ## build all policies.
@@ -55,7 +65,20 @@ build: ## build all policies.
 	$(RUNNER) run --rm \
 		-e USER=$(shell id -u) -e GROUP=$(shell id -g) \
 		-v $(shell pwd)/build/$(subst :,/,$*):/dist \
-		rancher-selinux:$(subst :,/,$*) ./repo-metadata
+		rancher-selinux:$(subst :,/,$*) ./metadata
+
+upload: $(AWSCLI) version ## uploads all artefacts from each policy into S3.
+	$(MAKE) $(addsuffix -upload, $(POLICIES))
+
+%-upload: 
+	RPM_CHANNEL=$(RPM_CHANNEL) POLICY=$(subst :,/,$*) \
+    TESTING_AWS_ACCESS_KEY_ID="$(TESTING_AWS_ACCESS_KEY_ID)" \
+    TESTING_AWS_SECRET_ACCESS_KEY="$(TESTING_AWS_SECRET_ACCESS_KEY)" \
+    TESTING_AWS_S3_BUCKET="$(TESTING_AWS_S3_BUCKET)" \
+    PRODUCTION_AWS_ACCESS_KEY_ID="$(PRODUCTION_AWS_ACCESS_KEY_ID)" \
+    PRODUCTION_AWS_SECRET_ACCESS_KEY="$(PRODUCTION_AWS_SECRET_ACCESS_KEY)" \
+    PRODUCTION_AWS_S3_BUCKET="$(PRODUCTION_AWS_S3_BUCKET)" \
+		./hack/upload
 
 version: ## parse and display version.
 ifdef VERSION_MSG
@@ -63,7 +86,6 @@ ifdef VERSION_MSG
 endif
 
 	@echo Version Information
-	@echo 
 	@echo RPM_VERSION: $(RPM_VERSION)
 	@echo RPM_RELEASE: $(RPM_RELEASE)
 	@echo RPM_CHANNEL: $(RPM_CHANNEL)

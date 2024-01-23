@@ -1,0 +1,85 @@
+#!/bin/bash
+set -eo pipefail
+
+declare AWS_S3_BUCKET_VAR
+
+function check_vars()
+{
+    echo "checking for required vars"
+
+    local required_vars
+    required_vars=(RPM_CHANNEL POLICY)
+
+    for var in "${required_vars[@]}"; do
+        [ -z "${!var}" ] && echo "$var is not set." && var_unset=true
+    done
+
+    [ -n "${var_unset}" ] && exit 1
+    return 0
+}
+
+function aws_auth()
+{
+    case "${RPM_CHANNEL}" in
+      "testing")
+        export AWS_ACCESS_KEY_ID="${TESTING_AWS_ACCESS_KEY_ID}"
+        export AWS_SECRET_ACCESS_KEY="${TESTING_AWS_SECRET_ACCESS_KEY}"
+        export AWS_S3_BUCKET_VAR=TESTING_AWS_S3_BUCKET
+        ;;
+      "production")
+        export AWS_ACCESS_KEY_ID="${PRODUCTION_AWS_ACCESS_KEY_ID}"
+        export AWS_SECRET_ACCESS_KEY="${PRODUCTION_AWS_SECRET_ACCESS_KEY}"
+        export AWS_S3_BUCKET_VAR=PRODUCTION_AWS_S3_BUCKET
+        ;;
+      *)
+        echo "RPM_CHANNEL $RPM_CHANNEL does not match one of: [testing, production]"
+        exit 1
+        ;;
+    esac
+
+    required_vars=("${AWS_S3_BUCKET_VAR}" AWS_ACCESS_KEY_ID AWS_SECRET_ACCESS_KEY)
+    for var in "${required_vars[@]}"; do
+        [ -z "${!var}" ] && echo "$var is not set." && var_unset=true
+    done
+
+    [ -n "${var_unset}" ] && echo "failing rpm upload" && exit 1
+    return 0
+}
+
+function upload_artefacts()
+{
+    case "${POLICY}" in
+      "centos7")
+        S3_POLICY_DIR="centos/7"
+        ;;
+      "centos8")
+        S3_POLICY_DIR="centos/8"
+        ;;
+      "centos9")
+        S3_POLICY_DIR="centos/9"
+        ;;
+      "fedora37")
+        S3_POLICY_DIR="fedora/37"
+        ;;
+      "microos")
+        S3_POLICY_DIR="microos"
+        ;;
+      *)
+        echo "unsupported policy: ${POLICY}"
+        exit 1
+        ;;
+    esac
+
+    echo "Uploading RPMs packages and repo metadata files"
+    aws s3 cp "build/${POLICY}/noarch/" "s3://${!AWS_S3_BUCKET_VAR}/rancher/${RPM_CHANNEL}/${S3_POLICY_DIR}/noarch/" --recursive
+    aws s3 cp "build/${POLICY}/source/" "s3://${!AWS_S3_BUCKET_VAR}/rancher/${RPM_CHANNEL}/${S3_POLICY_DIR}/source/" --recursive
+}
+
+function main()
+{
+    check_vars
+    aws_auth
+    upload_artefacts
+}
+
+main
