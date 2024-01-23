@@ -12,8 +12,7 @@ RUN yum install -y \
         selinux-policy-devel \
         yum-utils \
         rpm-build \
-        rpm-sign expect \
-        unzip
+        rpm-sign expect
 
 # Confirm this is needed, move to final if not.
 COPY hack/centos7_sign /usr/local/bin/sign
@@ -26,8 +25,7 @@ RUN yum install -y \
         selinux-policy-devel \
         yum-utils \
         rpm-build \
-        rpm-sign \
-        unzip
+        rpm-sign
 
 # Move to final stage if centos7_sign is removed.
 COPY hack/sign /usr/local/bin/sign
@@ -40,8 +38,7 @@ RUN yum install -y \
         selinux-policy-devel \
         yum-utils \
         rpm-build \
-        rpm-sign \
-        unzip
+        rpm-sign
 
 # Move to final stage if centos7_sign is removed.
 COPY hack/sign /usr/local/bin/sign
@@ -52,8 +49,7 @@ RUN dnf install -y \
         container-selinux \
         selinux-policy-devel \
         rpm-build \
-        rpm-sign \
-        unzip
+        rpm-sign
 
 # Move to final stage if centos7_sign is removed.
 COPY hack/sign /usr/local/bin/sign
@@ -63,8 +59,7 @@ RUN zypper install -y \
         container-selinux \
         selinux-policy-devel \
         rpm-build \
-        rpm \
-        unzip
+        rpm
 
 # libglib is required to install createrepo_c in Tumbleweed.
 RUN zypper install -y libglib-2_0-0 createrepo_c
@@ -82,4 +77,4 @@ COPY policy/${POLICY}/rancher-selinux.spec \
      policy/${POLICY}/rancher.fc \
      policy/${POLICY}/rancher.te \
      hack/build \
-     hack/repo-metadata .
+     hack/metadata .
