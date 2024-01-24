@@ -3,6 +3,9 @@ set -eo pipefail
 
 declare AWS_S3_BUCKET_VAR
 
+TOOLS_BIN="${TOOLS_BIN:-build/tools}"
+AWS_BIN="${TOOLS_BIN}/aws/dist/aws"
+
 function check_vars()
 {
     echo "checking for required vars"
@@ -71,8 +74,8 @@ function upload_artefacts()
     esac
 
     echo "Uploading RPMs packages and repo metadata files"
-    aws s3 cp "build/${POLICY}/noarch/" "s3://${!AWS_S3_BUCKET_VAR}/rancher/${RPM_CHANNEL}/${S3_POLICY_DIR}/noarch/" --recursive
-    aws s3 cp "build/${POLICY}/source/" "s3://${!AWS_S3_BUCKET_VAR}/rancher/${RPM_CHANNEL}/${S3_POLICY_DIR}/source/" --recursive
+    "${AWS_BIN}" s3 cp "build/${POLICY}/noarch/" "s3://${!AWS_S3_BUCKET_VAR}/rancher/${RPM_CHANNEL}/${S3_POLICY_DIR}/noarch/" --recursive
+    "${AWS_BIN}" s3 cp "build/${POLICY}/source/" "s3://${!AWS_S3_BUCKET_VAR}/rancher/${RPM_CHANNEL}/${S3_POLICY_DIR}/source/" --recursive
 }
 
 function main()
