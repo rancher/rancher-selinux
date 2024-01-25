@@ -51,7 +51,7 @@ function check_channel(){
       exit 1
     fi
     echo "Importing GPG private key ${KEY_VAR}"
-    gpg --yes --pinentry-mode loopback --batch --passphrase "${!PASSPHRASE_VAR}" --import - <<< "${TESTING_PRIVATE_KEY}"
+    gpg --yes --pinentry-mode loopback --batch --passphrase "${!PASSPHRASE_VAR}" --import - <<< "${!KEY_VAR}"
     echo "Signing keys imported successfully"
 }
 
