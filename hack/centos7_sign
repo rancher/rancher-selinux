@@ -1,0 +1,93 @@
+#!/bin/bash
+set -eo pipefail
+
+PASSPHRASE_VAR=""
+
+function dryrun() {
+		export TESTING_PRIVATE_KEY_PASS_PHRASE=$(cat /dev/urandom | tr -dc A-Za-z0-9 | head -c20)
+    export PASSPHRASE_VAR=TESTING_PRIVATE_KEY_PASS_PHRASE
+		
+    cat <<\EOF >~/.rpmmacros 
+%_signature gpg
+%_gpg_name disposable-ci-test-key
+EOF
+
+    gpg --gen-key --batch <(echo "Key-Type: 1"; \
+                            echo "Key-Length: 2048"; \
+                            echo "Subkey-Type: 1"; \
+                            echo "Subkey-Length: 2048"; \
+                            echo "Expire-Date: 0"; \
+                            echo "Name-Real: disposable-ci-test-key"; \
+                            echo "Name-Email: disposable-ci-test-key"; \
+                            echo "%no-protection"; )
+
+    sign_rpms
+}
+
+function check_vars()
+{
+    echo "checking for required vars"
+
+    local required_vars
+    required_vars=(SIGN_KEY_EMAIL RPM_CHANNEL)
+
+    for var in "${required_vars[@]}"; do
+        [ -z "${!var}" ] && echo "$var is not set." && var_unset=true
+    done
+
+    [ -n "${var_unset}" ] && exit 1
+    return 0
+}
+
+function import_key() {
+    cat <<\EOF >~/.rpmmacros 
+%_signature gpg
+%_gpg_name ci@rancher.com
+EOF
+
+    case "${RPM_CHANNEL}" in
+      "testing")
+        PASSPHRASE_VAR="TESTING_PRIVATE_KEY_PASS_PHRASE"
+        KEY_VAR="TESTING_PRIVATE_KEY"
+        ;;
+      "production")
+        PASSPHRASE_VAR="PRIVATE_KEY_PASS_PHRASE"
+        KEY_VAR="PRIVATE_KEY"
+        ;;
+      *)
+        echo "RPM_CHANNEL ${RPM_CHANNEL} does not match one of: [testing, production]"
+        exit 1
+        ;;
+    esac
+
+    if ! grep "BEGIN PGP PRIVATE KEY BLOCK" <<<"${!KEY_VAR}"; then
+      echo "${KEY_VAR} not defined, failing rpm sign"
+      exit 1
+    fi
+    gpg --import - <<<"${!KEY_VAR}"
+    echo "Signing keys imported successfully"
+}
+
+function sign_rpms() {
+    expect <<EOF
+set timeout 60
+spawn sh -c "rpmsign --addsign /dist/**/rancher-*.rpm"
+expect "Enter pass phrase:"
+send -- "${!PASSPHRASE_VAR}\r"
+expect eof
+lassign [wait] _ _ _ code
+exit \$code
+EOF
+}
+
+function main (){    
+    check_vars
+    import_key
+    sign_rpms
+}
+
+if [[ "$1" == "--dry-run" ]]; then
+  dryrun
+else
+  main
+fi

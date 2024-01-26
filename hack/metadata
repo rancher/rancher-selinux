@@ -1,0 +1,22 @@
+#!/bin/bash
+set -euxo pipefail
+
+OUTDIR="${OUTDIR:-/dist}"
+USER="${USER:-1000}"
+GROUP="${GROUP:-1000}"
+
+DIRS=("noarch" "source")
+
+function extract_metadata() {
+	for dir in "${DIRS[@]}"; do
+		echo "Creating repository metadata for $dir"
+		createrepo_c "${OUTDIR}/$dir/"
+	done
+}
+
+function main(){
+    extract_metadata
+    chown -R "${USER}:${GROUP}" "${OUTDIR}/"
+}
+
+main
