@@ -80,6 +80,13 @@ upload: $(AWSCLI) version ## uploads all artefacts from each policy into S3.
     PRODUCTION_AWS_S3_BUCKET="$(PRODUCTION_AWS_S3_BUCKET)" \
 		./hack/upload
 
+upload-gh: $(GH) ## upload all artefacts to the GitHub release.
+	$(MAKE) $(addsuffix -upload-gh, $(POLICIES))
+
+%-upload-gh:
+	TAG=$(TAG) \
+		./hack/upload-gh $(subst :,/,$*)
+
 version: ## parse and display version.
 ifdef VERSION_MSG
 	@echo  $(VERSION_MSG); exit 1
