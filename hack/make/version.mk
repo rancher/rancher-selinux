@@ -24,27 +24,23 @@ ifneq ($(TAG),)
 	endif
 endif
 
+VERSION_REGEX = ^v([0-9]+\.[0-9]+)(-rc[0-9]+){0,1}\.(production|testing)\.([0-9]+)$$
+
 # If a tag was not set, or worktree is dirty, fallback
 # to default format: v0.0~aaaaaadirty.testing.0
 ifeq ($(VERSION),)
 	VERSION = "v0.0~$(COMMIT)$(DIRTY).testing.0"
+	VERSION_REGEX = ^v([0-9]+\.[0-9]+)(~[a-fA-F0-9]{7,10}$(DIRTY))\.(testing)\.([0-9]+)$$
 endif
 
-rpm_version_regex := s/\-/~/g; s/^v([0-9]+\.[0-9]+[-~a-zA-Z0-9]*)\.[a-z]+\.[0-9]+$$/\1/;
-rpm_channel_regex := s/^v[0-9]+\.[0-9]+[-~a-zA-Z0-9]*\.([a-z]+)\.[0-9]+$$/\1/;
-rpm_release_regex := s/^v[0-9]+\.[0-9]+[-~a-zA-Z0-9]*\.[a-z]+\.([0-9]+)$$/\1/;
+RPM_VERSION = $(shell [[ $(VERSION) =~ $(VERSION_REGEX) ]] && echo $${BASH_REMATCH[1]})
+RPM_RELEASE = $(shell [[ $(VERSION) =~ $(VERSION_REGEX) ]] && echo $${BASH_REMATCH[4]})
+RPM_CHANNEL = $(shell [[ $(VERSION) =~ $(VERSION_REGEX) ]] && echo $${BASH_REMATCH[3]})
 
-CHECKED_VERSION = $(shell echo $(VERSION) | grep -E 'v[0-9]+\.[0-9]+[~a-zA-Z0-9]*\.[a-z]+\.[0-9]+')
-
-ifneq ($(CHECKED_VERSION),)
-	RPM_VERSION = $(shell sed -E -e "$(rpm_version_regex)" <<<"$(VERSION)")
-	RPM_RELEASE = $(shell sed -E -e "$(rpm_release_regex)" <<<"$(VERSION)")
-	RPM_CHANNEL = $(shell sed -E -e "$(rpm_channel_regex)" <<<"$(VERSION)")
-
-	ALLOWED_CHANNELS := production testing
-	ifneq ($(filter-out $(ALLOWED_CHANNELS),$(RPM_CHANNEL)),)
-		VERSION_MSG = "RPM_CHANNEL $(RPM_CHANNEL) does not match one of: [testing, production]"
-	endif
-else
-	VERSION_MSG = "Tag ($(TAG)) or version ($(VERSION)) does not match expected format"
+ifeq ($(RPM_VERSION),)
+	VERSION_MSG = "Tag ($(TAG)) or Version ($(VERSION)) does not match expected format"
+else ifeq ($(RPM_RELEASE),)
+	VERSION_MSG = "Tag ($(TAG)) or Version ($(VERSION)) does not match expected format"
+else ifeq ($(RPM_CHANNEL),)
+	VERSION_MSG = "Tag ($(TAG)) or Version ($(VERSION)) does not match expected format"
 endif
