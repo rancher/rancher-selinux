@@ -54,7 +54,7 @@ build: ## build all policies.
 %-build-sign: ## sign the generate rpms of a given policy.
 	@$(RUNNER) run --rm \
 		-e USER=$(shell id -u) -e GROUP=$(shell id -g) \
-		-e SIGN_KEY_EMAIL -e RPM_CHANNEL="$(RPM_CHANNEL)" \
+		-e SIGN_KEY_EMAIL="$(SIGN_KEY_EMAIL)" -e RPM_CHANNEL="$(RPM_CHANNEL)" \
 		-e TESTING_PRIVATE_KEY_PASS_PHRASE \
 		-e TESTING_PRIVATE_KEY \
 		-e PRIVATE_KEY -e PRIVATE_KEY_PASS_PHRASE \
