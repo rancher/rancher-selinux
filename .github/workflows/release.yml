@@ -35,6 +35,7 @@ jobs:
         PRODUCTION_AWS_ACCESS_KEY_ID: ${{ secrets.PRODUCTION_AWS_ACCESS_KEY_ID }}
         PRODUCTION_AWS_SECRET_ACCESS_KEY: ${{ secrets.PRODUCTION_AWS_SECRET_ACCESS_KEY }}
         PRODUCTION_AWS_S3_BUCKET: ${{ secrets.PRODUCTION_AWS_S3_BUCKET }}
+        AWS_EC2_METADATA_DISABLED: true
 
     - run: make upload-gh
       env:
