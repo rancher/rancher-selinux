@@ -5,6 +5,16 @@ ARG POLICY
 # of the target platforms.
 
 FROM quay.io/centos/centos:centos7 as centos7
+
+# CentOS7 is now EOL and the DNS it relied on for mirror lists
+# (mirrorlist.centos.org), no longer resolves.
+# The adhoc solution is to disable the use of the mirrorlist and default
+# to vault.centos.org instead.
+#
+# https://blog.centos.org/2023/04/end-dates-are-coming-for-centos-stream-8-and-centos-linux-7/
+RUN sed -i 's/mirrorlist/#mirrorlist/g' /etc/yum.repos.d/CentOS-* && \
+        sed -i 's|#baseurl=http://mirror.centos.org|baseurl=http://vault.centos.org|g' /etc/yum.repos.d/CentOS-*
+
 RUN yum install -y \
         createrepo_c \
         epel-release \
@@ -18,6 +28,16 @@ RUN yum install -y \
 COPY hack/centos7_sign /usr/local/bin/sign
 
 FROM quay.io/centos/centos:stream8 as centos8
+
+# Stream8 is now EOL and the DNS it relied on for mirror lists
+# (mirrorlist.centos.org), no longer resolves.
+# The adhoc solution is to disable the use of the mirrorlist and default
+# to vault.centos.org instead.
+#
+# https://blog.centos.org/2023/04/end-dates-are-coming-for-centos-stream-8-and-centos-linux-7/
+RUN sed -i 's/mirrorlist/#mirrorlist/g' /etc/yum.repos.d/CentOS-* && \
+        sed -i 's|#baseurl=http://mirror.centos.org|baseurl=http://vault.centos.org|g' /etc/yum.repos.d/CentOS-*
+
 RUN yum install -y \
         createrepo_c \
         epel-release \
