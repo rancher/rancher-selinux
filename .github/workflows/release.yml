@@ -25,17 +25,16 @@ jobs:
       uses: rancher-eio/read-vault-secrets@main
       with:
         secrets: |
-          secret/data/github/repo/${{ github.repository }}/testing-private-key/credentials privateKey | TESTING_PRIVATE_KEY ;
+          secret/data/github/repo/${{ github.repository }}/testing-private-key/credentials token | TESTING_PRIVATE_KEY ;
           secret/data/github/repo/${{ github.repository }}/testing-private-key-pass-phrase/credentials token | TESTING_PRIVATE_KEY_PASS_PHRASE ;
           secret/data/github/repo/${{ github.repository }}/testing-aws-s3-bucket/credentials token | TESTING_AWS_S3_BUCKET ;
           secret/data/github/repo/${{ github.repository }}/testing-aws-access-key-id/credentials token | TESTING_AWS_ACCESS_KEY_ID ;
           secret/data/github/repo/${{ github.repository }}/testing-aws-secret-access-key/credentials token | TESTING_AWS_SECRET_ACCESS_KEY ;
-          secret/data/github/repo/${{ github.repository }}/private-key/credentials privateKey | PRIVATE_KEY ;
+          secret/data/github/repo/${{ github.repository }}/private-key/credentials token | PRIVATE_KEY ;
           secret/data/github/repo/${{ github.repository }}/private-key-pass-phrase/credentials token | PRIVATE_KEY_PASS_PHRASE ;
           secret/data/github/repo/${{ github.repository }}/aws-s3-bucket/credentials token | PRODUCTION_AWS_S3_BUCKET ;
           secret/data/github/repo/${{ github.repository }}/aws-access-key-id/credentials token | PRODUCTION_AWS_ACCESS_KEY_ID ;
           secret/data/github/repo/${{ github.repository }}/aws-secret-access-key/credentials token | PRODUCTION_AWS_SECRET_ACCESS_KEY
-        
     - run: make build
       env:
         TESTING_PRIVATE_KEY: ${{ env.TESTING_PRIVATE_KEY }}
