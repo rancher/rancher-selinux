@@ -103,3 +103,105 @@ manage_files_pattern(rke_network_t, var_run_t, var_run_t)
 allow rke_network_t kernel_t:system module_request;
 allow rke_network_t kernel_t:unix_dgram_socket sendto;
 allow rke_network_t self:netlink_route_socket nlmsg_write;
+
+############################################################################
+# type prom_node_exporter_t   				 	           #
+# target: prometheus-node-exporter container in Rancher's monitoring chart #
+############################################################################
+require {
+	type container_runtime_t;
+	type prom_node_exporter_t;
+	type etc_t;
+	type init_t;
+	type lib_t;
+	type proc_mdstat_t;
+	type proc_net_t;
+	type proc_t;
+	type security_t;
+	type sysfs_t;
+
+	class dir { getattr open read search };
+	class file { getattr open read };
+	class lnk_file read;
+	class netlink_route_socket { bind create getattr getopt nlmsg_read read write };
+	class tcp_socket { accept getattr read setopt write };
+}
+
+# Create type prometheus_node_exporter_t;
+type prom_node_exporter_t;
+
+# Allow container_runtime_t to read directories and files of prom_node_exporter_t.
+container_domain_template(prom_node_exporter_t, container)
+
+# Allow container_runtime_t to read directories and files of prom_node_exporter_t.
+# AVC Example: type=AVC msg=audit(...): avc:  denied  { search } for  pid=243339 comm="k3s-server" path="/proc/..." scontext=system_u:system_r:container_runtime_t:s0 tcontext=system_u:system_r:prom_node_exporter_t:s0 tclass=dir permissive=1
+#allow container_runtime_t prom_node_exporter_t:dir { open read search };
+
+# Allow container_runtime_t to get attributes and read files of prom_node_exporter_t.
+# AVC Example: type=AVC msg=audit(...): avc:  denied  { getattr } for  pid=243339 comm="k3s-server" path="/proc/..." scontext=system_u:system_r:container_runtime_t:s0 tcontext=system_u:system_r:prom_node_exporter_t:s0 tclass=file permissive=1
+#allow container_runtime_t prom_node_exporter_t:file { getattr open read };
+
+# Allow container_runtime_t to read symbolic links of prom_node_exporter_t.
+# AVC Example: type=AVC msg=audit(...): avc:  denied  { read } for  pid=243339 comm="k3s-server" path="/proc/..." scontext=system_u:system_r:container_runtime_t:s0 tcontext=system_u:system_r:prom_node_exporter_t:s0 tclass=lnk_file permissive=1
+#allow container_runtime_t prom_node_exporter_t:lnk_file read;
+
+#============= prom_node_exporter_t ==============
+
+# Allow prom_node_exporter_t to read symbolic links in /etc.
+# AVC Example: type=AVC msg=audit(...): avc:  denied  { read } for  pid=1085727 comm="node_exporter" path="/etc/os-release" tclass=lnk_file permissive=1
+allow prom_node_exporter_t etc_t:lnk_file read;
+
+# Allow prom_node_exporter_t to search init_t directories.
+# AVC Example: type=AVC msg=audit(...): avc:  denied  { search } for  pid=1085727 comm="node_exporter" path="/proc/1" tclass=dir permissive=1
+allow prom_node_exporter_t init_t:dir search;
+
+# Allow prom_node_exporter_t to read and open init_t files.
+# AVC Example: type=AVC msg=audit(...): avc:  denied  { read } for  pid=1085727 comm="node_exporter" path="/proc/1/mounts" tclass=file permissive=1
+allow prom_node_exporter_t init_t:file { open read };
+
+# Allow prom_node_exporter_t to read and open library files.
+# AVC Example: type=AVC msg=audit(...): avc:  denied  { read } for  pid=1085727 comm="node_exporter" path="/lib/..." tclass=file permissive=1
+allow prom_node_exporter_t lib_t:file { open read };
+
+# Allow prom_node_exporter_t to read and open proc_mdstat_t files.
+# AVC Example: type=AVC msg=audit(...): avc:  denied  { read } for  pid=1085727 comm="node_exporter" path="/proc/mdstat" tclass=file permissive=1
+allow prom_node_exporter_t proc_mdstat_t:file { open read };
+
+# Allow prom_node_exporter_t to read and open proc_net_t files.
+# AVC Example: type=AVC msg=audit(...): avc:  denied  { read } for  pid=1085727 comm="node_exporter" path="/proc/net/udp" tclass=file permissive=1
+allow prom_node_exporter_t proc_net_t:file { open read };
+
+# Allow prom_node_exporter_t to read symbolic links in proc_net_t.
+# AVC Example: type=AVC msg=audit(...): avc:  denied  { read } for  pid=1085727 comm="node_exporter" path="/proc/net/self" tclass=lnk_file permissive=1
+allow prom_node_exporter_t proc_net_t:lnk_file read;
+
+# Allow prom_node_exporter_t to read and open proc_t files.
+# AVC Example: type=AVC msg=audit(...): avc:  denied  { read } for  pid=1085727 comm="node_exporter" path="/proc/stat" tclass=file permissive=1
+allow prom_node_exporter_t proc_t:file { open read };
+
+# Allow prom_node_exporter_t to read symbolic links in proc_t.
+# AVC Example: type=AVC msg=audit(...): avc:  denied  { read } for  pid=1085727 comm="node_exporter" path="/proc/self" tclass=lnk_file permissive=1
+allow prom_node_exporter_t proc_t:lnk_file read;
+
+# Allow prom_node_exporter_t to get attributes and read security_t files.
+# AVC Example: type=AVC msg=audit(...): avc:  denied  { getattr } for  pid=1085727 comm="node_exporter" path="/sys/fs/selinux/enforce" tclass=file permissive=1
+allow prom_node_exporter_t security_t:file { getattr open read };
+
+# Allow prom_node_exporter_t to access its own directories and files.
+# AVC Example: type=AVC msg=audit(...): avc:  denied  { getattr } for  pid=1085727 comm="node_exporter" path="/proc/..." tclass=dir permissive=1
+allow prom_node_exporter_t self:dir { getattr search };
+allow prom_node_exporter_t self:file { open read };
+
+# Allow prom_node_exporter_t to interact with netlink_route_socket.
+# AVC Example: type=AVC msg=audit(...): avc:  denied  { create } for  pid=1085727 comm="node_exporter" scontext=system_u:system_r:prom_node_exporter_t:s0 tclass=netlink_route_socket permissive=1
+allow prom_node_exporter_t self:netlink_route_socket { bind create getattr getopt nlmsg_read read write };
+
+# Allow prom_node_exporter_t to interact with TCP sockets.
+# AVC Example: type=AVC msg=audit(...): avc:  denied  { accept } for  pid=1085727 comm="node_exporter" tclass=tcp_socket permissive=1
+allow prom_node_exporter_t self:tcp_socket { accept getattr read setopt write };
+
+# Allow prom_node_exporter_t to read sysfs directories and files.
+# AVC Example: type=AVC msg=audit(...): avc:  denied  { read } for  pid=1085727 comm="node_exporter" path="/sys/..." tclass=file permissive=1
+allow prom_node_exporter_t sysfs_t:dir read;
+allow prom_node_exporter_t sysfs_t:file { getattr open read };
+allow prom_node_exporter_t sysfs_t:lnk_file read;
