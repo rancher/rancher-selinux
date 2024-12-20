@@ -103,3 +103,51 @@ manage_files_pattern(rke_network_t, var_run_t, var_run_t)
 allow rke_network_t kernel_t:system module_request;
 allow rke_network_t kernel_t:unix_dgram_socket sendto;
 allow rke_network_t self:netlink_route_socket nlmsg_write;
+
+############################################################################
+# type prom_node_exporter_t   				 	           #
+# target: prometheus-node-exporter container for Rancher monitoring chart  #
+############################################################################
+require {
+	type container_runtime_t;
+	type prom_node_exporter_t;
+	class file { getattr open read };
+	class dir { getattr open read search };
+	class lnk_file { getattr read };
+	class process { fork noatsecure rlimitinh siginh sigkill signal transition };
+	class key { create search setattr view };
+	class tcp_socket { accept bind create getattr listen read setopt write };
+	class netlink_route_socket { bind create getattr getopt nlmsg_read read write };
+	class fd use;
+	class fifo_file write;
+}
+type prom_node_exporter_t;
+container_domain_template(prom_node_exporter_t, container)
+virt_sandbox_domain(prom_node_exporter_t)
+allow container_runtime_t prom_node_exporter_t:dir { open read search };
+allow container_runtime_t prom_node_exporter_t:file { getattr open read };
+allow container_runtime_t prom_node_exporter_t:key { create search setattr view };
+allow container_runtime_t prom_node_exporter_t:lnk_file { getattr read };
+allow container_runtime_t prom_node_exporter_t:process { noatsecure rlimitinh siginh sigkill signal transition };
+allow prom_node_exporter_t container_runtime_t:fd use;
+allow prom_node_exporter_t container_runtime_t:fifo_file write;
+allow prom_node_exporter_t self:dir { getattr search };
+allow prom_node_exporter_t self:file { open read };
+allow prom_node_exporter_t self:lnk_file read;
+allow prom_node_exporter_t self:netlink_route_socket { bind create getattr getopt nlmsg_read read write };
+allow prom_node_exporter_t self:process fork;
+allow prom_node_exporter_t self:tcp_socket { accept bind create getattr listen read setopt write };
+container_runtime_typebounds(prom_node_exporter_t)
+corenet_tcp_bind_generic_node(prom_node_exporter_t)
+corenet_tcp_bind_generic_port(prom_node_exporter_t)
+dev_list_sysfs(prom_node_exporter_t)
+dev_read_sysfs(prom_node_exporter_t)
+files_read_etc_symlinks(prom_node_exporter_t)
+init_read_state(prom_node_exporter_t)
+kernel_read_network_state(prom_node_exporter_t)
+kernel_read_network_state_symlinks(prom_node_exporter_t)
+kernel_read_proc_files(prom_node_exporter_t)
+kernel_read_proc_symlinks(prom_node_exporter_t)
+kernel_read_software_raid_state(prom_node_exporter_t)
+libs_read_lib_files(prom_node_exporter_t)
+selinux_read_security_files(prom_node_exporter_t)
