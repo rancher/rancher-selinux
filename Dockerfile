@@ -63,7 +63,7 @@ RUN yum install -y \
 # Move to final stage if centos7_sign is removed.
 COPY hack/sign /usr/local/bin/sign
 
-FROM fedora:37 as fedora37
+FROM fedora:42 as fedora37
 RUN dnf install -y \
         createrepo_c \
         container-selinux \
