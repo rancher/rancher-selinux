@@ -1,5 +1,6 @@
 RUNNER ?= docker
 POLICIES = $(shell find policy -mindepth 1 -maxdepth 1 -type d | sort -u | cut -f 2 -d'/')
+DISTROS = $(shell find hack/e2e -type f | grep .yaml | sort -u | cut -f3 -d'/' | cut -f1 -d.)
 
 # GPG Signing
 DRY_RUN ?= false
@@ -97,6 +98,21 @@ endif
 	@echo RPM_RELEASE: $(RPM_RELEASE)
 	@echo RPM_CHANNEL: $(RPM_CHANNEL)
 	@echo VERSION: $(VERSION)
+
+LIMA_DEBUG :=
+LIMA_DEBUG = --debug
+
+e2e:
+	$(MAKE) $(addprefix push-tool-, $(DISTROS))
+
+# TODO: push the selinux into the VM
+# TODO: Apply the selinux rancher on helm install
+e2e-%:
+	limactl start $(LIMA_DEBUG) --tty=false --cpus 6 --memory 8 --plain --name=$(subst :,/,$*) hack/e2e/$(subst :,/,$*).yaml
+	limactl cp hack/e2e/setup-vm.sh $(subst :,/,$*):/tmp/setup-vm.sh
+	limactl shell $(subst :,/,$*) sudo /tmp/setup-vm.sh
+	limactl stop $(subst :,/,$*)
+	limactl delete $(subst :,/,$*)
 
 help: ## display Makefile's help.
 	@awk 'BEGIN {FS = ":.*##"; printf "\nUsage:\n  make \033[36m<target>\033[0m\n"} /^[a-zA-Z_0-9-]+:.*?##/ { printf "  \033[36m%-15s\033[0m %s\n", $$1, $$2 } /^##@/ { printf "\n\033[1m%s\033[0m\n", substr($$0, 5) } ' $(MAKEFILE_LIST)
