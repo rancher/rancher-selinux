@@ -52,9 +52,6 @@ function aws_auth()
 function upload_artefacts()
 {
     case "${POLICY}" in
-      "centos7")
-        S3_POLICY_DIR="centos/7"
-        ;;
       "centos8")
         S3_POLICY_DIR="centos/8"
         ;;
