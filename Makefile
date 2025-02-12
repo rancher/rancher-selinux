@@ -1,6 +1,7 @@
 RUNNER ?= docker
 POLICIES = $(shell find policy -mindepth 1 -maxdepth 1 -type d | sort -u | cut -f 2 -d'/')
 DISTROS = $(shell find hack/e2e -type f | grep .yaml | sort -u | cut -f3 -d'/' | cut -f1 -d.)
+LIMA_DEBUG :=
 
 # GPG Signing
 DRY_RUN ?= false
@@ -99,18 +100,22 @@ endif
 	@echo RPM_CHANNEL: $(RPM_CHANNEL)
 	@echo VERSION: $(VERSION)
 
-LIMA_DEBUG :=
-LIMA_DEBUG = --debug
-
 e2e:
 	$(MAKE) $(addprefix push-tool-, $(DISTROS))
 
-# TODO: push the selinux into the VM
-# TODO: Apply the selinux rancher on helm install
 e2e-%:
+	make $(subst :,/,$*)-build-image
+	make $(subst :,/,$*)-build-artefacts
+	
 	limactl start $(LIMA_DEBUG) --tty=false --cpus 6 --memory 8 --plain --name=$(subst :,/,$*) hack/e2e/$(subst :,/,$*).yaml
+	limactl cp build/$(subst :,/,$*)/noarch/rancher-*.rpm $(subst :,/,$*):/tmp/rancher-selinux.rpm
 	limactl cp hack/e2e/setup-vm.sh $(subst :,/,$*):/tmp/setup-vm.sh
 	limactl shell $(subst :,/,$*) sudo /tmp/setup-vm.sh
+	
+	limactl stop $(subst :,/,$*)
+	limactl delete $(subst :,/,$*)
+
+e2e-%-clean:
 	limactl stop $(subst :,/,$*)
 	limactl delete $(subst :,/,$*)
 

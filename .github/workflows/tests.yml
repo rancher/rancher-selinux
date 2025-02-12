@@ -24,13 +24,14 @@ jobs:
   e2e:
     strategy:
       matrix:
-        distro: [rocky-8, rocky-9, leap]
+        distro: [centos8, centos9]
 
     runs-on: ubuntu-latest
     steps:
     - name: Checkout code
       uses: actions/checkout@v4
 
+    # https://lima-vm.io/docs/examples/gha/
     - name: "Install QEMU"
       run: |
         set -eux

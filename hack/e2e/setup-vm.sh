@@ -1,11 +1,13 @@
 #!/bin/bash
 
-set -xo pipefail
+set -euxo pipefail
 
 function enforceSELinux(){
     echo "> Check SELinux status"
     # Short circuit if SELinux is not being enforced.
     getenforce | grep -q Enforcing
+
+    sudo dnf install -y /tmp/rancher-selinux.rpm
 }
 
 function installDependencies(){
@@ -13,7 +15,7 @@ function installDependencies(){
     echo 'echo "export TERM=xterm"' >> ~/.bashrc
 
     # Git is required by helm
-    yum in -y git
+    # yum in -y git
 
     echo "> Installing Helm 3"
     curl https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3 | bash
@@ -62,6 +64,38 @@ function installRancher(){
     
     kubectl wait --for=condition=ready -n cattle-system pod -l app=rancher --timeout=60s
     kubectl wait --for=condition=ready -n cattle-system pod -l app=rancher-webhook --timeout=60s
+    
+    # Background processes, such as Fleet deployment need to take place, which
+    # may result in intermittent errors. Add some additional waiting time to
+    # accommodate such processes.
+    sleep 60
+}
+
+
+function installRancherMonitoring(){
+    helm repo add rancher-charts https://charts.rancher.io/
+
+    helm upgrade --install=true \
+        --labels=catalog.cattle.io/cluster-repo-name=rancher-charts \
+        --namespace=cattle-monitoring-system --timeout=10m0s --wait=true \
+        --create-namespace \
+        rancher-monitoring-crd rancher-charts/rancher-monitoring-crd
+
+    helm upgrade --install=true \
+        --labels=catalog.cattle.io/cluster-repo-name=rancher-charts \
+        --namespace=cattle-monitoring-system --timeout=10m0s --wait=true \
+        --create-namespace \
+        rancher-monitoring rancher-charts/rancher-monitoring
+
+    # Ensure exporter is working before SELinux policy is applied
+    kubectl wait --for=condition=ready -n cattle-monitoring-system pod -l app.kubernetes.io/name=prometheus-node-exporter --timeout=60s
+
+    # TODO: Move this to a helm chart value
+    kubectl patch daemonset rancher-monitoring-prometheus-node-exporter  -n cattle-monitoring-system -p '{"spec": {"template": {"spec": 
+    { "securityContext": {"seLinuxOptions": {"type": "prom_node_exporter_t"}}}}}}'
+
+    # Ensure exporter comes back after SELinux policy is applied
+    kubectl wait --for=condition=ready -n cattle-monitoring-system pod -l app.kubernetes.io/name=prometheus-node-exporter --timeout=60s
 }
 
 function E2E(){
@@ -73,6 +107,7 @@ function main(){
     installDependencies
     installRKE2
     installRancher
+    installRancherMonitoring
 
     E2E
 }

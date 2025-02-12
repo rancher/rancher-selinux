@@ -17,7 +17,11 @@ images:
 - location: "https://dl.rockylinux.org/pub/rocky/9/images/aarch64/Rocky-9-GenericCloud.latest.aarch64.qcow2"
   arch: "aarch64"
 mountTypesUnsupported: ["9p"]
-mounts:
-- location: "~"
-- location: "/tmp/lima"
-  writable: true
+mounts: []
+
+provision:
+- mode: system
+  script: |
+    #!/bin/sh
+
+    yum in -y git container-selinux
