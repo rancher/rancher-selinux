@@ -111,7 +111,7 @@ e2e-%:
 	limactl cp build/$(subst :,/,$*)/noarch/rancher-*.rpm $(subst :,/,$*):/tmp/rancher-selinux.rpm
 	limactl cp hack/e2e/setup-vm.sh $(subst :,/,$*):/tmp/setup-vm.sh
 	limactl shell $(subst :,/,$*) sudo /tmp/setup-vm.sh
-	
+
 	limactl stop $(subst :,/,$*)
 	limactl delete $(subst :,/,$*)
 

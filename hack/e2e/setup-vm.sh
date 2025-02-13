@@ -14,9 +14,6 @@ function installDependencies(){
     echo 'echo "export PATH=$PATH:/usr/local/bin"' >> ~/.bashrc
     echo 'echo "export TERM=xterm"' >> ~/.bashrc
 
-    # Git is required by helm
-    # yum in -y git
-
     echo "> Installing Helm 3"
     curl https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3 | bash
     helm version
@@ -58,19 +55,17 @@ function installRancher(){
     helm repo add rancher-latest https://releases.rancher.com/server-charts/latest
     helm install rancher rancher-latest/rancher \
         --namespace cattle-system \
-        --set bootstrapPassword="${ADMIN_PASSWORD}" \
         --set hostname=rancher.local \
         --set replicas=1
-    
-    kubectl wait --for=condition=ready -n cattle-system pod -l app=rancher --timeout=60s
-    kubectl wait --for=condition=ready -n cattle-system pod -l app=rancher-webhook --timeout=60s
     
     # Background processes, such as Fleet deployment need to take place, which
     # may result in intermittent errors. Add some additional waiting time to
     # accommodate such processes.
-    sleep 60
-}
+    sleep 180
 
+    kubectl wait --for=condition=ready -n cattle-system pod -l app=rancher --timeout=120s
+    kubectl wait --for=condition=ready -n cattle-system pod -l app=rancher-webhook --timeout=120s
+}
 
 function installRancherMonitoring(){
     helm repo add rancher-charts https://charts.rancher.io/
@@ -112,11 +107,8 @@ function main(){
     E2E
 }
 
-
 # This is needed as Rocky does not include it in the PATH,
 # which is required for the Helm install.
 export PATH=$PATH:/usr/local/bin
-
-export ADMIN_PASSWORD=$(head -c 16 /dev/urandom | base64 | tr -dc '[:alnum:]')
 
 main
