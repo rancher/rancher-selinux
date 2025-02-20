@@ -20,3 +20,42 @@ jobs:
         go-version: 'stable'
 
     - run: make build DRY_RUN=true
+
+  e2e:
+    strategy:
+      matrix:
+        distro: [centos8, centos9]
+
+    runs-on: ubuntu-latest
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    # https://lima-vm.io/docs/examples/gha/
+    - name: "Install QEMU"
+      run: |
+        set -eux
+        sudo apt-get update
+        sudo apt-get install -y --no-install-recommends ovmf qemu-system-x86 qemu-utils
+        sudo modprobe kvm
+        sudo chown $(whoami) /dev/kvm        
+
+    - name: "Install Lima"
+      run: |
+        set -eux
+        LIMA_VERSION=$(curl -fsSL https://api.github.com/repos/lima-vm/lima/releases/latest | jq -r .tag_name)
+        FILE="lima-${LIMA_VERSION:1}-Linux-x86_64.tar.gz"
+        curl -fOSL https://github.com/lima-vm/lima/releases/download/${LIMA_VERSION}/${FILE}
+        sudo tar Cxzvf /usr/local "${FILE}"
+        rm -f "${FILE}"
+        # Export LIMA_VERSION For the GHA cache key
+        echo "LIMA_VERSION=${LIMA_VERSION}" >>$GITHUB_ENV        
+
+    - name: "Cache ~/.cache/lima"
+      uses: actions/cache@v4
+      with:
+        path: ~/.cache/lima
+        key: lima-${{ env.LIMA_VERSION }}
+      
+    - name: E2E ${{ matrix.distro }}
+      run: make e2e-${{ matrix.distro }}
