@@ -20,9 +20,15 @@ function installDependencies(){
 
     local KUBECTL_VERSION
     KUBECTL_VERSION=$(curl -L -s https://dl.k8s.io/release/stable.txt)
+    ARCH=$(uname -p)
+    if [[ "${ARCH}" == "aarch64" ]]; then
+    ARCH="arm64"
+    fi
 
-    echo "> Installing kubectl ${KUBECTL_VERSION}"
-    curl -LO "https://dl.k8s.io/release/${KUBECTL_VERSION}/bin/linux/amd64/kubectl"
+    echo "> Installing kubectl ${KUBECTL_VERSION} for ${ARCH}"
+    curl -LO "https://dl.k8s.io/release/${KUBECTL_VERSION}/bin/linux/${ARCH}/kubectl"
+    curl -LO "https://dl.k8s.io/release/${KUBECTL_VERSION}/bin/linux/${ARCH}/kubectl.sha256"
+    echo "$(<kubectl.sha256)  kubectl" | sha256sum -c -
     install -o root -g root -m 0755 kubectl /usr/bin/kubectl
     kubectl version --client=true
 }
