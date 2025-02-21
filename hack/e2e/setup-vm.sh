@@ -6,7 +6,8 @@ function enforceSELinux(){
     echo "> Check SELinux status"
     # Short circuit if SELinux is not being enforced.
     getenforce | grep -q Enforcing
-
+    
+    sudo semodule -DB #Remove dontaudits from policy for debugging
     sudo dnf install -y /tmp/rancher-selinux.rpm
 }
 
@@ -103,13 +104,66 @@ function E2E(){
     echo "<!-- Execute some RM op here -->"
 }
 
+function e2eRancherMonitoring(){
+
+    # Wait for node-exporter process
+    timeout_seconds=180  # 2 minutes timeout
+    start_time=$(date +%s)
+
+    while true; do
+      current_time=$(date +%s)
+      elapsed_time=$((current_time - start_time))
+
+      if pgrep node_exporter > /dev/null; then
+        echo "node_exporter process found!"
+        break
+      elif [[ $elapsed_time -ge $timeout_seconds ]]; then
+        echo "Timeout reached. node_exporter process not found after $timeout_seconds seconds."
+        exit 1
+      else
+        echo "node_exporter process not found. Waiting..."
+        sleep 30  # Wait for 30 seconds between checks
+      fi
+    done
+
+    CHART_CONTAINER_EXPECTED_SLTYPE="prom_node_exporter_t"
+    CHART_CONTAINER="node-exporter"
+    CHART_CONTAINER_PID=$(pgrep node_exporter)
+    CHART_POD_NAMESPACE="cattle-monitoring-system"
+    CHART_POD=$(kubectl get pods -n -n ${CHART_POD_NAMESPACE} -o custom-columns=NAME:.metadata.name | grep ${CHART_CONTAINER})
+
+    echo "> Verify the presence of ${CHART_CONTAINER_EXPECTED_SLTYPE}"
+    if [[ "$(seinfo -t ${CHART_CONTAINER_RUNNING_SLTYPE}" == "${CHART_CONTAINER_EXPECTED_SLTYPE}" ]]; then
+        echo "SELinux type is present: ${CHART_CONTAINER_EXPECTED_SLTYPE}"
+    else
+        echo "SELinux type is not present: ${CHART_CONTAINER_EXPECTED_SLTYPE}"
+    fi
+
+    echo "> Verify expected SELinux context type ${CHART_CONTAINER_EXPECTED_SLTYPE} for container ${CHART_CONTAINER} (PID: ${CHART_CONTAINER_PID})"
+    CHART_CONTAINER_RUNNING_SLTYPE=$(kubectl get pod ${CHART_POD} -n -n ${CHART_POD_NAMESPACE} -o json | jq -r '.spec.securityContext.seLinuxOptions.type')
+    if [[ "${CHART_CONTAINER_RUNNING_SLTYPE}" == "${CHART_CONTAINER_EXPECTED_SLTYPE}" ]]; then
+        echo "SELinux type is correct: ${CHART_CONTAINER_RUNNING_SLTYPE}"
+    else
+        echo "SELinux type is incorrect or not set: ${CHART_CONTAINER_RUNNING_SLTYPE}"
+    fi
+
+    echo ">Look for any AVCs related to ${CHART_CONTAINER_RUNNING_SLTYPE}"
+    if ausearch -m AVC,USER_AVC | grep -q ${CHART_CONTAINER_RUNNING_SLTYPE}; then
+        echo "AVCs found for ${CHART_CONTAINER_RUNNING_SLTYPE}"
+        ausearch -m AVC,USER_AVC | grep ${CHART_CONTAINER_RUNNING_SLTYPE}
+        exit 1
+    else
+        echo "No AVCs found for ${CHART_CONTAINER_RUNNING_SLTYPE}"
+    fi
+}
+
 function main(){
     enforceSELinux
     installDependencies
     installRKE2
     installRancher
     installRancherMonitoring
-
+    e2eRancherMonitoring
     E2E
 }
 
