@@ -24,4 +24,4 @@ provision:
   script: |
     #!/bin/sh
 
-    yum in -y git container-selinux
+    yum in -y git container-selinux setools
