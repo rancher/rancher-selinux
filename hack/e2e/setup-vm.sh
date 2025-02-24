@@ -100,6 +100,34 @@ function installRancherMonitoring(){
     kubectl wait --for=condition=ready -n cattle-monitoring-system pod -l app.kubernetes.io/name=prometheus-node-exporter --timeout=60s
 }
 
+function installRancherLogging(){
+    helm repo add rancher-charts https://charts.rancher.io/
+
+    helm upgrade --install=true \
+        --labels=catalog.cattle.io/cluster-repo-name=rancher-charts \
+        --namespace=cattle-logging-system --timeout=10m0s --wait=true \
+        --create-namespace \
+        rancher-logging-crd rancher-charts/rancher-logging-crd
+
+    helm upgrade --install=true \
+        --labels=catalog.cattle.io/cluster-repo-name=rancher-charts \
+        --namespace=cattle-logging-system --timeout=10m0s --wait=true \
+        --create-namespace \
+        rancher-logging rancher-charts/rancher-logging
+    
+    sleep 180
+
+    # Ensure fluentbit is working before SELinux policy is applied
+    kubectl wait --for=condition=ready -n cattle-logging-system pod -l app.kubernetes.io/name=fluentbit --timeout=60s
+
+    # TODO: Move this to a helm chart value
+    kubectl patch daemonset rancher-logging-root-fluentbit -n cattle-logging-system -p '{"spec": {"template": {"spec": 
+    { "securityContext": {"seLinuxOptions": {"type": "rke_logreader_t"}}}}}}'
+
+    # Ensure fluentbit comes back after SELinux policy is applied
+    kubectl wait --for=condition=ready -n cattle-logging-system pod -l app.kubernetes.io/name=fluentbit --timeout=60s
+}
+
 function E2E(){
     echo "<!-- Execute some RM op here -->"
 }
@@ -127,20 +155,75 @@ function e2eRancherMonitoring(){
     done
 
     CHART_CONTAINER_EXPECTED_SLTYPE="prom_node_exporter_t"
+    CHART_CONTAINER_RUNNING_SLTYPE=""
     CHART_CONTAINER="node-exporter"
     CHART_CONTAINER_PID=$(pgrep node_exporter)
     CHART_POD_NAMESPACE="cattle-monitoring-system"
-    CHART_POD=$(kubectl get pods -n -n ${CHART_POD_NAMESPACE} -o custom-columns=NAME:.metadata.name | grep ${CHART_CONTAINER})
+    CHART_POD=$(kubectl get pods -n ${CHART_POD_NAMESPACE} -o custom-columns=NAME:.metadata.name | grep ${CHART_CONTAINER})
 
     echo "> Verify the presence of ${CHART_CONTAINER_EXPECTED_SLTYPE}"
-    if [[ "$(seinfo -t ${CHART_CONTAINER_RUNNING_SLTYPE}" == "${CHART_CONTAINER_EXPECTED_SLTYPE}" ]]; then
+    if [[ "$(seinfo -t ${CHART_CONTAINER_EXPECTED_SLTYPE})" == "${CHART_CONTAINER_EXPECTED_SLTYPE}" ]]; then
         echo "SELinux type is present: ${CHART_CONTAINER_EXPECTED_SLTYPE}"
     else
         echo "SELinux type is not present: ${CHART_CONTAINER_EXPECTED_SLTYPE}"
     fi
 
     echo "> Verify expected SELinux context type ${CHART_CONTAINER_EXPECTED_SLTYPE} for container ${CHART_CONTAINER} (PID: ${CHART_CONTAINER_PID})"
-    CHART_CONTAINER_RUNNING_SLTYPE=$(kubectl get pod ${CHART_POD} -n -n ${CHART_POD_NAMESPACE} -o json | jq -r '.spec.securityContext.seLinuxOptions.type')
+    CHART_CONTAINER_RUNNING_SLTYPE=$(kubectl get pod ${CHART_POD} -n ${CHART_POD_NAMESPACE} -o json | jq -r '.spec.securityContext.seLinuxOptions.type')
+    if [[ "${CHART_CONTAINER_RUNNING_SLTYPE}" == "${CHART_CONTAINER_EXPECTED_SLTYPE}" ]]; then
+        echo "SELinux type is correct: ${CHART_CONTAINER_RUNNING_SLTYPE}"
+    else
+        echo "SELinux type is incorrect or not set: ${CHART_CONTAINER_RUNNING_SLTYPE}"
+    fi
+
+    echo ">Look for any AVCs related to ${CHART_CONTAINER_RUNNING_SLTYPE}"
+    if ausearch -m AVC,USER_AVC | grep -q ${CHART_CONTAINER_RUNNING_SLTYPE}; then
+        echo "AVCs found for ${CHART_CONTAINER_RUNNING_SLTYPE}"
+        ausearch -m AVC,USER_AVC | grep ${CHART_CONTAINER_RUNNING_SLTYPE}
+        exit 1
+    else
+        echo "No AVCs found for ${CHART_CONTAINER_RUNNING_SLTYPE}"
+    fi
+}
+
+function e2eRancherLogging(){
+
+    # Wait for fluentbit process
+    timeout_seconds=180  # 2 minutes timeout
+    start_time=$(date +%s)
+
+    while true; do
+      current_time=$(date +%s)
+      elapsed_time=$((current_time - start_time))
+
+      if pgrep fluent-bit > /dev/null; then
+        echo "fluent-bit process found!"
+        break
+      elif [[ $elapsed_time -ge $timeout_seconds ]]; then
+        echo "Timeout reached. node_exporter process not found after $timeout_seconds seconds."
+        exit 1
+      else
+        echo "fluentbit process not found. Waiting..."
+        sleep 30  # Wait for 30 seconds between checks
+      fi
+    done
+
+    CHART_CONTAINER_EXPECTED_SLTYPE="rke_logreader_t"
+    CHART_CONTAINER_RUNNING_SLTYPE=""
+    CHART_CONTAINER="fluentbit"
+    CHART_CONTAINER_PID=$(pgrep fluent-bit)
+    CHART_POD_NAMESPACE="cattle-logging-system"
+    CHART_POD=$(kubectl get pods -n ${CHART_POD_NAMESPACE} -o custom-columns=NAME:.metadata.name | grep "${CHART_CONTAINER}")
+
+    echo "> Verify the presence of ${CHART_CONTAINER_EXPECTED_SLTYPE}"
+    if [[ "$(seinfo -t ${CHART_CONTAINER_EXPECTED_SLTYPE})" == "${CHART_CONTAINER_EXPECTED_SLTYPE}" ]]; then
+        echo "SELinux type is present: ${CHART_CONTAINER_EXPECTED_SLTYPE}"
+    else
+        echo "SELinux type is not present: ${CHART_CONTAINER_EXPECTED_SLTYPE}"
+    fi
+
+    echo "> Verify expected SELinux context type ${CHART_CONTAINER_EXPECTED_SLTYPE} for container ${CHART_CONTAINER} (PID: ${CHART_CONTAINER_PID})"
+    CHART_CONTAINER_RUNNING_SLTYPE=$(kubectl get pod ${CHART_POD} -n ${CHART_POD_NAMESPACE} -o json | jq -r '.spec.securityContext.seLinuxOptions.type')
     if [[ "${CHART_CONTAINER_RUNNING_SLTYPE}" == "${CHART_CONTAINER_EXPECTED_SLTYPE}" ]]; then
         echo "SELinux type is correct: ${CHART_CONTAINER_RUNNING_SLTYPE}"
     else
@@ -163,7 +246,9 @@ function main(){
     installRKE2
     installRancher
     installRancherMonitoring
+    installRancherLogging
     e2eRancherMonitoring
+    e2eRancherLogging
     E2E
 }
 
