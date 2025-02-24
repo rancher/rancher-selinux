@@ -24,6 +24,8 @@ function installDependencies(){
     ARCH=$(uname -p)
     if [[ "${ARCH}" == "aarch64" ]]; then
     ARCH="arm64"
+    elif [[ "${ARCH}" == "x86_64" ]]; then
+    ARCH="amd64"
     fi
 
     echo "> Installing kubectl ${KUBECTL_VERSION} for ${ARCH}"
@@ -162,7 +164,7 @@ function e2eRancherMonitoring(){
     CHART_POD=$(kubectl get pods -n ${CHART_POD_NAMESPACE} -o custom-columns=NAME:.metadata.name | grep ${CHART_CONTAINER})
 
     echo "> Verify the presence of ${CHART_CONTAINER_EXPECTED_SLTYPE}"
-    if [[ "$(seinfo -t ${CHART_CONTAINER_EXPECTED_SLTYPE})" == "${CHART_CONTAINER_EXPECTED_SLTYPE}" ]]; then
+    if [[ "$(seinfo -t ${CHART_CONTAINER_EXPECTED_SLTYPE} | grep -o ${CHART_CONTAINER_EXPECTED_SLTYPE})" == "${CHART_CONTAINER_EXPECTED_SLTYPE}" ]]; then
         echo "SELinux type is present: ${CHART_CONTAINER_EXPECTED_SLTYPE}"
     else
         echo "SELinux type is not present: ${CHART_CONTAINER_EXPECTED_SLTYPE}"
@@ -177,7 +179,7 @@ function e2eRancherMonitoring(){
     fi
 
     echo ">Look for any AVCs related to ${CHART_CONTAINER_RUNNING_SLTYPE}"
-    if ausearch -m AVC,USER_AVC | grep -q ${CHART_CONTAINER_RUNNING_SLTYPE}; then
+    if ausearch -m AVC,USER_AVC | grep -q ${CHART_CONTAINER_RUNNING_SLTYPE} > /dev/null; then
         echo "AVCs found for ${CHART_CONTAINER_RUNNING_SLTYPE}"
         ausearch -m AVC,USER_AVC | grep ${CHART_CONTAINER_RUNNING_SLTYPE}
         exit 1
@@ -216,7 +218,7 @@ function e2eRancherLogging(){
     CHART_POD=$(kubectl get pods -n ${CHART_POD_NAMESPACE} -o custom-columns=NAME:.metadata.name | grep "${CHART_CONTAINER}")
 
     echo "> Verify the presence of ${CHART_CONTAINER_EXPECTED_SLTYPE}"
-    if [[ "$(seinfo -t ${CHART_CONTAINER_EXPECTED_SLTYPE})" == "${CHART_CONTAINER_EXPECTED_SLTYPE}" ]]; then
+    if [[ "$(seinfo -t ${CHART_CONTAINER_EXPECTED_SLTYPE} | grep -o ${CHART_CONTAINER_EXPECTED_SLTYPE})" == "${CHART_CONTAINER_EXPECTED_SLTYPE}" ]]; then
         echo "SELinux type is present: ${CHART_CONTAINER_EXPECTED_SLTYPE}"
     else
         echo "SELinux type is not present: ${CHART_CONTAINER_EXPECTED_SLTYPE}"
@@ -231,7 +233,7 @@ function e2eRancherLogging(){
     fi
 
     echo ">Look for any AVCs related to ${CHART_CONTAINER_RUNNING_SLTYPE}"
-    if ausearch -m AVC,USER_AVC | grep -q ${CHART_CONTAINER_RUNNING_SLTYPE}; then
+    if ausearch -m AVC,USER_AVC | grep -q ${CHART_CONTAINER_RUNNING_SLTYPE} > /dev/null; then
         echo "AVCs found for ${CHART_CONTAINER_RUNNING_SLTYPE}"
         ausearch -m AVC,USER_AVC | grep ${CHART_CONTAINER_RUNNING_SLTYPE}
         exit 1
