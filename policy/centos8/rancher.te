@@ -103,3 +103,20 @@ manage_files_pattern(rke_network_t, var_run_t, var_run_t)
 allow rke_network_t kernel_t:system module_request;
 allow rke_network_t kernel_t:unix_dgram_socket sendto;
 allow rke_network_t self:netlink_route_socket nlmsg_write;
+
+############################################################################
+# type prom_node_exporter_t                                                #
+# target: prometheus-node-exporter container for Rancher monitoring chart  #
+############################################################################
+gen_require(`
+        type container_runtime_t;
+	type security_t;
+        class tcp_socket listen;
+')
+container_domain_template(prom_node_exporter, container)
+virt_sandbox_domain(prom_node_exporter_t)
+corenet_tcp_bind_generic_node(prom_node_exporter_t)
+corenet_tcp_bind_generic_port(prom_node_exporter_t)
+init_read_state(prom_node_exporter_t)
+allow prom_node_exporter_t self:tcp_socket listen;
+allow prom_node_exporter_t security_t:file { getattr open read };
