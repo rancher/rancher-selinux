@@ -6,7 +6,9 @@ function enforceSELinux(){
     echo "> Check SELinux status"
     # Short circuit if SELinux is not being enforced.
     getenforce | grep -q Enforcing
-
+    # Remove dontaudits from policy for debugging
+    sudo semodule -DB 
+    # Install rancher-selinux policy
     sudo dnf install -y /tmp/rancher-selinux.rpm
 }
 
@@ -20,9 +22,14 @@ function installDependencies(){
 
     local KUBECTL_VERSION
     KUBECTL_VERSION=$(curl -L -s https://dl.k8s.io/release/stable.txt)
+    ARCH=$(uname -p)
+    [[ "${ARCH}" == "aarch64" ]] && ARCH="arm64"
+    [[ "${ARCH}" == "x86_64" ]] && ARCH="amd64"
 
-    echo "> Installing kubectl ${KUBECTL_VERSION}"
-    curl -LO "https://dl.k8s.io/release/${KUBECTL_VERSION}/bin/linux/amd64/kubectl"
+    echo "> Installing kubectl ${KUBECTL_VERSION} for ${ARCH}"
+    curl -LO "https://dl.k8s.io/release/${KUBECTL_VERSION}/bin/linux/${ARCH}/kubectl"
+    curl -LO "https://dl.k8s.io/release/${KUBECTL_VERSION}/bin/linux/${ARCH}/kubectl.sha256"
+    echo "$(<kubectl.sha256)  kubectl" | sha256sum -c -
     install -o root -g root -m 0755 kubectl /usr/bin/kubectl
     kubectl version --client=true
 }
@@ -93,8 +100,94 @@ function installRancherMonitoring(){
     kubectl wait --for=condition=ready -n cattle-monitoring-system pod -l app.kubernetes.io/name=prometheus-node-exporter --timeout=60s
 }
 
-function E2E(){
-    echo "<!-- Execute some RM op here -->"
+function installRancherLogging(){
+    helm repo add rancher-charts https://charts.rancher.io/
+
+    helm upgrade --install=true \
+        --labels=catalog.cattle.io/cluster-repo-name=rancher-charts \
+        --namespace=cattle-logging-system --timeout=10m0s --wait=true \
+        --create-namespace \
+        rancher-logging-crd rancher-charts/rancher-logging-crd
+
+    # Install the chart with selinux enabled to true
+    helm upgrade --install=true \
+        --labels=catalog.cattle.io/cluster-repo-name=rancher-charts \
+        --namespace=cattle-logging-system --timeout=10m0s --wait=true \
+        --create-namespace \
+        rancher-logging rancher-charts/rancher-logging \
+        --set global.seLinux.enabled=true
+
+    # Ensure fluentbit daemonset is created
+    kubectl wait --for=create -n cattle-logging-system daemonset/rancher-logging-root-fluentbit --timeout=60s
+    # Wait for fluentbit pod to be ready
+    kubectl wait --for=condition=ready -n cattle-logging-system pod -l app.kubernetes.io/name=fluentbit --timeout=60s
+}
+
+function e2eRancherMonitoring(){
+    CHART_CONTAINER_EXPECTED_SLTYPE="prom_node_exporter_t"
+    CHART_CONTAINER_RUNNING_SLTYPE=""
+    CHART_CONTAINER="node-exporter"
+    CHART_POD_NAMESPACE="cattle-monitoring-system"
+    CHART_POD=$(kubectl get pods -n ${CHART_POD_NAMESPACE} -o custom-columns=NAME:.metadata.name | grep ${CHART_CONTAINER})
+
+    echo "> Verify the presence of ${CHART_CONTAINER_EXPECTED_SLTYPE}"
+    if [[ "$(seinfo -t ${CHART_CONTAINER_EXPECTED_SLTYPE} | grep -o ${CHART_CONTAINER_EXPECTED_SLTYPE})" == "${CHART_CONTAINER_EXPECTED_SLTYPE}" ]]; then
+        echo "SELinux type is present: ${CHART_CONTAINER_EXPECTED_SLTYPE}"
+    else
+        echo "SELinux type is not present: ${CHART_CONTAINER_EXPECTED_SLTYPE}"
+        exit 1
+    fi
+
+    echo "> Verify expected SELinux context type ${CHART_CONTAINER_EXPECTED_SLTYPE} for container ${CHART_CONTAINER}"
+    CHART_CONTAINER_RUNNING_SLTYPE=$(kubectl get pod ${CHART_POD} -n ${CHART_POD_NAMESPACE} -o json | jq -r '.spec.securityContext.seLinuxOptions.type')
+    if [[ "${CHART_CONTAINER_RUNNING_SLTYPE}" == "${CHART_CONTAINER_EXPECTED_SLTYPE}" ]]; then
+        echo "SELinux type is correct: ${CHART_CONTAINER_RUNNING_SLTYPE}"
+    else
+        echo "SELinux type is incorrect or not set: ${CHART_CONTAINER_RUNNING_SLTYPE}"
+        exit 1
+    fi
+
+    echo ">Look for any AVCs related to ${CHART_CONTAINER_RUNNING_SLTYPE}"
+    if ausearch -m AVC,USER_AVC | grep ${CHART_CONTAINER_RUNNING_SLTYPE} > /dev/null; then
+        echo "AVCs found for ${CHART_CONTAINER_RUNNING_SLTYPE}"
+        ausearch -m AVC,USER_AVC | grep ${CHART_CONTAINER_RUNNING_SLTYPE}
+        exit 1
+    else
+        echo "No AVCs found for ${CHART_CONTAINER_RUNNING_SLTYPE}"
+    fi
+}
+
+function e2eRancherLogging(){
+    CHART_CONTAINER_EXPECTED_SLTYPE="rke_logreader_t"
+    CHART_CONTAINER_RUNNING_SLTYPE=""
+    CHART_CONTAINER="fluentbit"
+    CHART_POD_NAMESPACE="cattle-logging-system"
+    CHART_POD=$(kubectl get pods -n ${CHART_POD_NAMESPACE} -o custom-columns=NAME:.metadata.name | grep "${CHART_CONTAINER}")
+
+    echo "> Verify the presence of ${CHART_CONTAINER_EXPECTED_SLTYPE}"
+    if [[ "$(seinfo -t ${CHART_CONTAINER_EXPECTED_SLTYPE} | grep -o ${CHART_CONTAINER_EXPECTED_SLTYPE})" == "${CHART_CONTAINER_EXPECTED_SLTYPE}" ]]; then
+        echo "SELinux type is present: ${CHART_CONTAINER_EXPECTED_SLTYPE}"
+    else
+        echo "SELinux type is not present: ${CHART_CONTAINER_EXPECTED_SLTYPE}"
+    fi
+
+    echo "> Verify expected SELinux context type ${CHART_CONTAINER_EXPECTED_SLTYPE} for container ${CHART_CONTAINER}"
+    CHART_CONTAINER_RUNNING_SLTYPE=$(kubectl get pod ${CHART_POD} -n ${CHART_POD_NAMESPACE} -o json | jq -r '.spec.containers[0].securityContext.seLinuxOptions.type')
+    if [[ "${CHART_CONTAINER_RUNNING_SLTYPE}" == "${CHART_CONTAINER_EXPECTED_SLTYPE}" ]]; then
+        echo "SELinux type is correct: ${CHART_CONTAINER_RUNNING_SLTYPE}"
+    else
+        echo "SELinux type is incorrect or not set: ${CHART_CONTAINER_RUNNING_SLTYPE}"
+        exit 1
+    fi
+
+    echo ">Look for any AVCs related to ${CHART_CONTAINER_RUNNING_SLTYPE}"
+    if ausearch -m AVC,USER_AVC | grep ${CHART_CONTAINER_RUNNING_SLTYPE} > /dev/null; then
+        echo "AVCs found for ${CHART_CONTAINER_RUNNING_SLTYPE}"
+        ausearch -m AVC,USER_AVC | grep ${CHART_CONTAINER_RUNNING_SLTYPE}
+        exit 1
+    else
+        echo "No AVCs found for ${CHART_CONTAINER_RUNNING_SLTYPE}"
+    fi
 }
 
 function main(){
@@ -103,8 +196,9 @@ function main(){
     installRKE2
     installRancher
     installRancherMonitoring
-
-    E2E
+    installRancherLogging
+    e2eRancherMonitoring
+    e2eRancherLogging
 }
 
 # This is needed as Rocky does not include it in the PATH,
@@ -112,3 +206,4 @@ function main(){
 export PATH=$PATH:/usr/local/bin
 
 main
+
