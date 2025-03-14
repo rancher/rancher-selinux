@@ -12,10 +12,10 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     - name: Checkout code
-      uses: actions/checkout@v4
+      uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4
 
     - name: Install Go
-      uses: actions/setup-go@v5
+      uses: actions/setup-go@f111f3307d8850f501ac008e886eec1fd1932a34 # v5
       with:
         go-version: 'stable'
 
@@ -29,7 +29,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     - name: Checkout code
-      uses: actions/checkout@v4
+      uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4
 
     # https://lima-vm.io/docs/examples/gha/
     - name: "Install QEMU"
@@ -52,7 +52,7 @@ jobs:
         echo "LIMA_VERSION=${LIMA_VERSION}" >>$GITHUB_ENV        
 
     - name: "Cache ~/.cache/lima"
-      uses: actions/cache@v4
+      uses: actions/cache@d4323d4df104b026a6aa633fdb11d772146be0bf # v4
       with:
         path: ~/.cache/lima
         key: lima-${{ env.LIMA_VERSION }}
