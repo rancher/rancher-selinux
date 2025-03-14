@@ -22,7 +22,7 @@ function installDependencies(){
 
     local KUBECTL_VERSION
     KUBECTL_VERSION=$(curl -L -s https://dl.k8s.io/release/stable.txt)
-    ARCH=$(uname -p)
+    ARCH=$(uname -m)
     [[ "${ARCH}" == "aarch64" ]] && ARCH="arm64"
     [[ "${ARCH}" == "x86_64" ]] && ARCH="amd64"
 
