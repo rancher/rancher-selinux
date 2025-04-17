@@ -10,10 +10,3 @@ images:
   digest: "sha256:085883b42c7e3b980e366a1fe006cd0ff15877f7e6e984426f3c6c67c7cc2faa"
 mounts:
 mountTypesUnsupported: ["9p"]
-
-provision:
-- mode: system
-  script: |
-    #!/bin/sh
-
-    yum in -y git jq container-selinux setools
