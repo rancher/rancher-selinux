@@ -8,6 +8,8 @@ function enforceSELinux(){
     getenforce | grep -q Enforcing
     # Remove dontaudits from policy for debugging
     sudo semodule -DB 
+    # Install container-selinux and selinux-policy latest versions
+    sudo dnf install -y container-selinux selinux-policy --best --allowerasing
     # Install rancher-selinux policy
     sudo dnf install -y /tmp/rancher-selinux.rpm
 }
@@ -15,6 +17,8 @@ function enforceSELinux(){
 function installDependencies(){
     echo 'echo "export PATH=$PATH:/usr/local/bin"' >> ~/.bashrc
     echo 'echo "export TERM=xterm"' >> ~/.bashrc
+
+    sudo dnf install -y jq git setools
 
     echo "> Installing Helm 3"
     curl https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3 | bash
