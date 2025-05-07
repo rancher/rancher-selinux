@@ -8,6 +8,8 @@ function enforceSELinux(){
     getenforce | grep -q Enforcing
     # Remove dontaudits from policy for debugging
     sudo semodule -DB 
+    # Install container-selinux and selinux-policy latest versions
+    sudo dnf install -y container-selinux selinux-policy --best --allowerasing
     # Install rancher-selinux policy
     sudo dnf install -y /tmp/rancher-selinux.rpm
 }
@@ -16,13 +18,15 @@ function installDependencies(){
     echo 'echo "export PATH=$PATH:/usr/local/bin"' >> ~/.bashrc
     echo 'echo "export TERM=xterm"' >> ~/.bashrc
 
+    sudo dnf install -y jq git setools policycoreutils-python-utils
+
     echo "> Installing Helm 3"
     curl https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3 | bash
     helm version
 
     local KUBECTL_VERSION
     KUBECTL_VERSION=$(curl -L -s https://dl.k8s.io/release/stable.txt)
-    ARCH=$(uname -p)
+    ARCH=$(uname -m)
     [[ "${ARCH}" == "aarch64" ]] && ARCH="arm64"
     [[ "${ARCH}" == "x86_64" ]] && ARCH="amd64"
 
@@ -45,9 +49,10 @@ function installRKE2(){
     # Making the kubeconfig world-readable, as this is for tests purposes only.
     chmod +r /etc/rancher/rke2/rke2.yaml
 
-    kubectl wait "$(kubectl get node -o name | head -n1)" --for=condition=ready --timeout=60s
-    kubectl wait --timeout=60s --for=condition=ready -n kube-system pod -l app.kubernetes.io/instance=rke2-coredns
-    kubectl wait --timeout=60s --for=condition=ready -n kube-system pod -l app.kubernetes.io/component=controller
+    kubectl wait --for=create node/$(hostname) --timeout=240s
+    kubectl wait "$(kubectl get node -o name | head -n1)" --for=condition=ready --timeout=240s
+    kubectl wait --timeout=240s --for=condition=ready -n kube-system pod -l app.kubernetes.io/instance=rke2-coredns
+    kubectl wait --timeout=240s --for=condition=ready -n kube-system pod -l app.kubernetes.io/component=controller
 }
 
 function installRancher(){
@@ -66,12 +71,12 @@ function installRancher(){
         --set replicas=1
     
     # Background processes, such as Fleet deployment need to take place, which
-    # may result in intermittent errors. Add some additional waiting time to
-    # accommodate such processes.
-    sleep 180
+    # may result in intermittent errors. Adding some extra verification, 
+    # such as rancher-webhook deployment creation.
 
-    kubectl wait --for=condition=ready -n cattle-system pod -l app=rancher --timeout=120s
-    kubectl wait --for=condition=ready -n cattle-system pod -l app=rancher-webhook --timeout=120s
+    kubectl wait --for=condition=ready -n cattle-system pod -l app=rancher --timeout=240s
+    kubectl wait --for=create -n cattle-system deployment/rancher-webhook --timeout=240s
+    kubectl wait --for=condition=ready -n cattle-system pod -l app=rancher-webhook --timeout=240s
 }
 
 function installRancherMonitoring(){
@@ -90,14 +95,14 @@ function installRancherMonitoring(){
         rancher-monitoring rancher-charts/rancher-monitoring
 
     # Ensure exporter is working before SELinux policy is applied
-    kubectl wait --for=condition=ready -n cattle-monitoring-system pod -l app.kubernetes.io/name=prometheus-node-exporter --timeout=60s
+    kubectl wait --for=condition=ready -n cattle-monitoring-system pod -l app.kubernetes.io/name=prometheus-node-exporter --timeout=240s
 
     # TODO: Move this to a helm chart value
     kubectl patch daemonset rancher-monitoring-prometheus-node-exporter  -n cattle-monitoring-system -p '{"spec": {"template": {"spec": 
     { "securityContext": {"seLinuxOptions": {"type": "prom_node_exporter_t"}}}}}}'
 
     # Ensure exporter comes back after SELinux policy is applied
-    kubectl wait --for=condition=ready -n cattle-monitoring-system pod -l app.kubernetes.io/name=prometheus-node-exporter --timeout=60s
+    kubectl wait --for=condition=ready -n cattle-monitoring-system pod -l app.kubernetes.io/name=prometheus-node-exporter --timeout=240s
 }
 
 function installRancherLogging(){
@@ -118,9 +123,9 @@ function installRancherLogging(){
         --set global.seLinux.enabled=true
 
     # Ensure fluentbit daemonset is created
-    kubectl wait --for=create -n cattle-logging-system daemonset/rancher-logging-root-fluentbit --timeout=60s
+    kubectl wait --for=create -n cattle-logging-system daemonset/rancher-logging-root-fluentbit --timeout=240s
     # Wait for fluentbit pod to be ready
-    kubectl wait --for=condition=ready -n cattle-logging-system pod -l app.kubernetes.io/name=fluentbit --timeout=60s
+    kubectl wait --for=condition=ready -n cattle-logging-system pod -l app.kubernetes.io/name=fluentbit --timeout=240s
 }
 
 function e2eRancherMonitoring(){

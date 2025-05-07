@@ -34,7 +34,7 @@ RUN yum install -y \
         rpm-build \
         rpm-sign
 
-FROM fedora:37 AS fedora37
+FROM fedora:41 AS fedora41
 RUN dnf install -y \
         createrepo_c \
         container-selinux \
