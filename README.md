@@ -16,19 +16,14 @@ The following Rancher compnents are covered by the policy:
 | RKE1                       | [flannel]                                                                | `rke_network_t`        |
 | RKE1                       | [rke] `etcd`, `rke-etcd-backup`, `kube-{apiserver,controller,scheduler}` | `rke_container_t`      |
 
-
 ## Support Matrix
 
-| Operating System | Version | Supported          | Policy     | E2E                   |
-| :--------------- | :------ | :----------------- | :--------- | :-------------------- |
-| RHEL/Rocky       | 8       | :white_check_mark: | [centos8]  | :white_check_mark:    |
-| RHEL/Rocky       | 9       | :white_check_mark: | [centos9]  | :white_check_mark:    |
-| Fedora           | 41      | :white_check_mark: | [fedora41] | :white_check_mark:    |
-| openSUSE MicroOS | Stable  | :white_check_mark: | [microos]  | :construction:        |
-| openSUSE Leap    | N/A     | :construction:     | N/A        | :construction:        |
-| SUSE Liberty     | N/A     | :construction:     | N/A        | :construction:        |
-| openSUSE SLE     | N/A     | :construction:     | N/A        | :construction:        |
-| Oracle Linux     | N/A     | :construction:     | N/A        | :construction:        |
+| Operating System      | Version | Supported          | Policy     | E2E                   |
+| :-------------------- | :------ | :----------------- | :--------- | :-------------------- |
+| RHEL/CentOS/Rocky     | 8       | :white_check_mark: | [centos8]  | :white_check_mark:    |
+| RHEL/CentOS/Rocky     | 9       | :white_check_mark: | [centos9]  | :white_check_mark:    |
+| Fedora                | 41      | :white_check_mark: | [fedora41] | :white_check_mark:    |
+| SUSE SLE/Micro        | Stable  | :white_check_mark: | [microos]  | :construction:        |
 
 ## Versioning/Tagging
 
