@@ -10,9 +10,10 @@ gen_require(`
     class tcp_socket { listen };
 ')
 
-#########################
-# type rke_kubereader_t #
-#########################
+############################################################
+# type: rke_kubereader_t                                   #
+# target: pushprox container for Rancher monitoring chart  #
+############################################################
 
 container_domain_template(rke_kubereader, container)
 virt_sandbox_domain(rke_kubereader_t)
@@ -21,9 +22,10 @@ allow rke_kubereader_t kubernetes_file_t:dir { open read search };
 allow rke_kubereader_t kubernetes_file_t:file { getattr open read };
 allow rke_kubereader_t kubernetes_file_t:lnk_file { getattr read };
 
-########################
-# type rke_logreader_t #
-########################
+############################################################
+# type: rke_logreader_t                                    #
+# target: fluentbit container for Rancher logging chart    #
+############################################################
 
 container_domain_template(rke_logreader, container)
 virt_sandbox_domain(rke_logreader_t)
@@ -40,9 +42,10 @@ allow rke_logreader_t var_log_t:dir read;
 allow rke_logreader_t var_log_t:file { getattr map open read };
 allow rke_logreader_t self:tcp_socket listen;
 
-########################
-# type rke_container_t #
-########################
+############################################################################
+# type: rke_container_t                                                    #
+# target: RKE1 services                                                    #
+############################################################################
 
 type rke_opt_t;
 files_type(rke_opt_t)
@@ -69,9 +72,10 @@ allow rke_container_t container_var_lib_t:file { relabelfrom relabelto };
 allow rke_container_t rke_opt_t:dir { relabelfrom relabelto };
 allow rke_container_t rke_opt_t:file { relabelfrom relabelto };
 
-########################
-# type rke_network_t   #
-########################
+############################################################################
+# type: rke_network_t                                                      #
+# target: flannel container for RKE1                                       #
+############################################################################
 
 container_domain_template(rke_network, container)
 virt_sandbox_domain(rke_network_t)
