@@ -1,7 +1,7 @@
 # vim: sw=4:ts=4:et
 
-%define selinux_policyver 3.13.1-252
-%define container_policyver 2.144.0-1
+%define selinux_policyver 3.14.3-139
+%define container_policyver 2.229.0-2
 
 %define relabel_files() \
 mkdir -p /var/lib/rancher/rke /etc/kubernetes /opt/rke; \
