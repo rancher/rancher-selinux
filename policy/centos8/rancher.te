@@ -5,7 +5,7 @@ gen_require(`
     type kubernetes_file_t, container_log_t, syslogd_var_run_t;
     type var_log_t, container_var_run_t, container_var_lib_t;
     type iptables_var_run_t, var_run_t, kernel_t, rke_opt_t, security_t;
-    class dir { open read search };
+    class dir { open read search watch };
     class file { getaddr getattr map open read watch relabelfrom relabelto };
     class lnk_file { getattr read };
     class tcp_socket { accept listen };
@@ -40,9 +40,9 @@ allow rke_logreader_t container_log_t:file { getattr open read watch };
 allow rke_logreader_t container_var_lib_t:dir search;
 allow rke_logreader_t container_var_lib_t:file { getattr open read watch };
 allow rke_logreader_t container_var_lib_t:lnk_file { getattr read };
-allow rke_logreader_t syslogd_var_run_t:dir read;
+allow rke_logreader_t syslogd_var_run_t:dir { read watch };
 allow rke_logreader_t syslogd_var_run_t:file { getattr map open read };
-allow rke_logreader_t var_log_t:dir read;
+allow rke_logreader_t var_log_t:dir { read watch };
 allow rke_logreader_t var_log_t:file { getattr map open read watch };
 allow rke_logreader_t self:tcp_socket listen;
 
