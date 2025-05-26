@@ -92,7 +92,8 @@ function installRancherMonitoring(){
         --labels=catalog.cattle.io/cluster-repo-name=rancher-charts \
         --namespace=cattle-monitoring-system --timeout=10m0s --wait=true \
         --create-namespace \
-        rancher-monitoring rancher-charts/rancher-monitoring
+        rancher-monitoring rancher-charts/rancher-monitoring \
+        --set prometheus.prometheusSpec.maximumStartupDurationSeconds=60
 
     # Ensure exporter is working before SELinux policy is applied
     kubectl wait --for=condition=ready -n cattle-monitoring-system pod -l app.kubernetes.io/name=prometheus-node-exporter --timeout=240s
