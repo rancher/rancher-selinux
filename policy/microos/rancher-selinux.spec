@@ -13,7 +13,7 @@ Release:	%{rancher_selinux_release}.sle
 Summary:	SELinux policy module for Rancher
 
 Group:	System Environment/Base
-License:	ASL 2.0
+License:	Apache-2.0
 URL:		http://rancher.com
 Source0:	rancher.pp
 
