@@ -1,4 +1,4 @@
-# About rancher-selinux
+# About rancher-selinux [![OpenSSF Scorecard](https://api.scorecard.dev/projects/github.com/rancher/rancher-selinux/badge)](https://scorecard.dev/viewer/?uri=github.com/rancher/rancher-selinux)
 
 `rancher-selinux` contains a set of SELinux policies designed to grant the necessary privileges to various Rancher components running on Linux systems with SELinux enabled. These policies enhance security by defining dedicated types for containers and assigning them the least privileges possible.
 
