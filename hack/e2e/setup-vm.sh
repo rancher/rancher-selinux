@@ -79,120 +79,70 @@ function installRancher(){
     kubectl wait --for=condition=ready -n cattle-system pod -l app=rancher-webhook --timeout=240s
 }
 
-function installRancherMonitoring(){
+# Example: installRancherChart "rancher-monitoring" "cattle-monitoring-system" "rancher-monitoring-prometheus-node-exporter" "app.kubernetes.io/name=prometheus-node-exporter" "--set prometheus.prometheusSpec.maximumStartupDurationSeconds=60"
+function installRancherChart() {
+    local CHART_NAME="$1"
+    local NAMESPACE="$2"
+    local DAEMONSET_NAME="$3"
+    local POD_LABEL_SELECTOR="$4"
+    local EXTRA_HELM_ARGS="${@:5}" # Collect any additional arguments
+
+    # Add Rancher charts repository
     helm repo add rancher-charts https://charts.rancher.io/
 
+    echo "> Installing CRD chart ${CHART_NAME}-crd in namespace ${NAMESPACE}"
     helm upgrade --install=true \
         --labels=catalog.cattle.io/cluster-repo-name=rancher-charts \
-        --namespace=cattle-monitoring-system --timeout=10m0s --wait=true \
+        --namespace="${NAMESPACE}" --timeout=10m0s --wait=true \
         --create-namespace \
-        rancher-monitoring-crd rancher-charts/rancher-monitoring-crd
+        "${CHART_NAME}-crd" "rancher-charts/${CHART_NAME}-crd"
 
+    echo "> Installing main chart ${CHART_NAME} with SELinux enabled"
     helm upgrade --install=true \
         --labels=catalog.cattle.io/cluster-repo-name=rancher-charts \
-        --namespace=cattle-monitoring-system --timeout=10m0s --wait=true \
+        --namespace="${NAMESPACE}" --timeout=10m0s --wait=true \
         --create-namespace \
-        rancher-monitoring rancher-charts/rancher-monitoring \
-        --set prometheus.prometheusSpec.maximumStartupDurationSeconds=60
+        "${CHART_NAME}" "rancher-charts/${CHART_NAME}" \
+        --set global.seLinux.enabled=true \
+        ${EXTRA_HELM_ARGS}
 
-    # Ensure exporter is working before SELinux policy is applied
-    kubectl wait --for=condition=ready -n cattle-monitoring-system pod -l app.kubernetes.io/name=prometheus-node-exporter --timeout=240s
-
-    # TODO: Move this to a helm chart value
-    kubectl patch daemonset rancher-monitoring-prometheus-node-exporter  -n cattle-monitoring-system -p '{"spec": {"template": {"spec": 
-    { "securityContext": {"seLinuxOptions": {"type": "prom_node_exporter_t"}}}}}}'
-
-    # Ensure exporter comes back after SELinux policy is applied
-    kubectl wait --for=condition=ready -n cattle-monitoring-system pod -l app.kubernetes.io/name=prometheus-node-exporter --timeout=240s
+    # Wait for DaemonSet creation and Pod readiness
+    kubectl wait --for=create -n "${NAMESPACE}" daemonset/"${DAEMONSET_NAME}" --timeout=240s
+    kubectl wait --for=condition=ready -n "${NAMESPACE}" pod -l "${POD_LABEL_SELECTOR}" --timeout=240s
 }
 
-function installRancherLogging(){
-    helm repo add rancher-charts https://charts.rancher.io/
+# Example: e2eSELinuxVerification "fluentbit" "fluent-bit" "cattle-logging-system" "rke_logreader_t"
+function e2eSELinuxVerification(){
+    local CONTAINER_NAME="$1"
+    local CONTAINER_RUNNING_NAME="$2"
+    local POD_NAMESPACE="$3"
+    local POD_NAME=$(kubectl get pods -n ${POD_NAMESPACE} -o custom-columns=NAME:.metadata.name | grep "${CONTAINER_NAME}")
+    local CONTAINER_EXPECTED_SLTYPE="$4"
+    local CONTAINER_RUNNING_SLTYPE=""
 
-    helm upgrade --install=true \
-        --labels=catalog.cattle.io/cluster-repo-name=rancher-charts \
-        --namespace=cattle-logging-system --timeout=10m0s --wait=true \
-        --create-namespace \
-        rancher-logging-crd rancher-charts/rancher-logging-crd
-
-    # Install the chart with selinux enabled to true
-    helm upgrade --install=true \
-        --labels=catalog.cattle.io/cluster-repo-name=rancher-charts \
-        --namespace=cattle-logging-system --timeout=10m0s --wait=true \
-        --create-namespace \
-        rancher-logging rancher-charts/rancher-logging \
-        --set global.seLinux.enabled=true
-
-    # Ensure fluentbit daemonset is created
-    kubectl wait --for=create -n cattle-logging-system daemonset/rancher-logging-root-fluentbit --timeout=240s
-    # Wait for fluentbit pod to be ready
-    kubectl wait --for=condition=ready -n cattle-logging-system pod -l app.kubernetes.io/name=fluentbit --timeout=240s
-}
-
-function e2eRancherMonitoring(){
-    CHART_CONTAINER_EXPECTED_SLTYPE="prom_node_exporter_t"
-    CHART_CONTAINER_RUNNING_SLTYPE=""
-    CHART_CONTAINER="node-exporter"
-    CHART_POD_NAMESPACE="cattle-monitoring-system"
-    CHART_POD=$(kubectl get pods -n ${CHART_POD_NAMESPACE} -o custom-columns=NAME:.metadata.name | grep ${CHART_CONTAINER})
-
-    echo "> Verify the presence of ${CHART_CONTAINER_EXPECTED_SLTYPE}"
-    if [[ "$(seinfo -t ${CHART_CONTAINER_EXPECTED_SLTYPE} | grep -o ${CHART_CONTAINER_EXPECTED_SLTYPE})" == "${CHART_CONTAINER_EXPECTED_SLTYPE}" ]]; then
-        echo "SELinux type is present: ${CHART_CONTAINER_EXPECTED_SLTYPE}"
+    echo "> Verify the presence of ${CONTAINER_EXPECTED_SLTYPE}"
+    if [[ "$(seinfo -t ${CONTAINER_EXPECTED_SLTYPE} | grep -o ${CONTAINER_EXPECTED_SLTYPE})" == "${CONTAINER_EXPECTED_SLTYPE}" ]]; then
+        echo "SELinux type is present: ${CONTAINER_EXPECTED_SLTYPE}"
     else
-        echo "SELinux type is not present: ${CHART_CONTAINER_EXPECTED_SLTYPE}"
+        echo "SELinux type is not present: ${CONTAINER_EXPECTED_SLTYPE}"
+    fi
+
+    echo "> Verify expected SELinux context type ${CONTAINER_EXPECTED_SLTYPE} for container ${CONTAINER_NAME}"
+    CONTAINER_RUNNING_SLTYPE=$(kubectl get pod ${POD_NAME} -n ${POD_NAMESPACE} -o json | jq -r ".spec.containers[] | select(.name==\"${CONTAINER_RUNNING_NAME}\") | .securityContext.seLinuxOptions.type")
+    if [[ "${CONTAINER_RUNNING_SLTYPE}" == "${CONTAINER_EXPECTED_SLTYPE}" ]]; then
+        echo "SELinux type is correct: ${CONTAINER_RUNNING_SLTYPE}"
+    else
+        echo "SELinux type is incorrect or not set: ${CONTAINER_RUNNING_SLTYPE}"
         exit 1
     fi
 
-    echo "> Verify expected SELinux context type ${CHART_CONTAINER_EXPECTED_SLTYPE} for container ${CHART_CONTAINER}"
-    CHART_CONTAINER_RUNNING_SLTYPE=$(kubectl get pod ${CHART_POD} -n ${CHART_POD_NAMESPACE} -o json | jq -r '.spec.securityContext.seLinuxOptions.type')
-    if [[ "${CHART_CONTAINER_RUNNING_SLTYPE}" == "${CHART_CONTAINER_EXPECTED_SLTYPE}" ]]; then
-        echo "SELinux type is correct: ${CHART_CONTAINER_RUNNING_SLTYPE}"
-    else
-        echo "SELinux type is incorrect or not set: ${CHART_CONTAINER_RUNNING_SLTYPE}"
-        exit 1
-    fi
-
-    echo ">Look for any AVCs related to ${CHART_CONTAINER_RUNNING_SLTYPE}"
-    if ausearch -m AVC,USER_AVC | grep ${CHART_CONTAINER_RUNNING_SLTYPE} > /dev/null; then
-        echo "AVCs found for ${CHART_CONTAINER_RUNNING_SLTYPE}"
-        ausearch -m AVC,USER_AVC | grep ${CHART_CONTAINER_RUNNING_SLTYPE}
+    echo "> Look for any AVCs related to ${CONTAINER_RUNNING_SLTYPE}"
+    if ausearch -m AVC,USER_AVC | grep "${CONTAINER_RUNNING_SLTYPE}" > /dev/null; then
+        echo "AVCs found for ${CONTAINER_RUNNING_SLTYPE}"
+        ausearch -m AVC,USER_AVC | grep "${CONTAINER_RUNNING_SLTYPE}"
         exit 1
     else
-        echo "No AVCs found for ${CHART_CONTAINER_RUNNING_SLTYPE}"
-    fi
-}
-
-function e2eRancherLogging(){
-    CHART_CONTAINER_EXPECTED_SLTYPE="rke_logreader_t"
-    CHART_CONTAINER_RUNNING_SLTYPE=""
-    CHART_CONTAINER="fluentbit"
-    CHART_POD_NAMESPACE="cattle-logging-system"
-    CHART_POD=$(kubectl get pods -n ${CHART_POD_NAMESPACE} -o custom-columns=NAME:.metadata.name | grep "${CHART_CONTAINER}")
-
-    echo "> Verify the presence of ${CHART_CONTAINER_EXPECTED_SLTYPE}"
-    if [[ "$(seinfo -t ${CHART_CONTAINER_EXPECTED_SLTYPE} | grep -o ${CHART_CONTAINER_EXPECTED_SLTYPE})" == "${CHART_CONTAINER_EXPECTED_SLTYPE}" ]]; then
-        echo "SELinux type is present: ${CHART_CONTAINER_EXPECTED_SLTYPE}"
-    else
-        echo "SELinux type is not present: ${CHART_CONTAINER_EXPECTED_SLTYPE}"
-    fi
-
-    echo "> Verify expected SELinux context type ${CHART_CONTAINER_EXPECTED_SLTYPE} for container ${CHART_CONTAINER}"
-    CHART_CONTAINER_RUNNING_SLTYPE=$(kubectl get pod ${CHART_POD} -n ${CHART_POD_NAMESPACE} -o json | jq -r '.spec.containers[0].securityContext.seLinuxOptions.type')
-    if [[ "${CHART_CONTAINER_RUNNING_SLTYPE}" == "${CHART_CONTAINER_EXPECTED_SLTYPE}" ]]; then
-        echo "SELinux type is correct: ${CHART_CONTAINER_RUNNING_SLTYPE}"
-    else
-        echo "SELinux type is incorrect or not set: ${CHART_CONTAINER_RUNNING_SLTYPE}"
-        exit 1
-    fi
-
-    echo ">Look for any AVCs related to ${CHART_CONTAINER_RUNNING_SLTYPE}"
-    if ausearch -m AVC,USER_AVC | grep ${CHART_CONTAINER_RUNNING_SLTYPE} > /dev/null; then
-        echo "AVCs found for ${CHART_CONTAINER_RUNNING_SLTYPE}"
-        ausearch -m AVC,USER_AVC | grep ${CHART_CONTAINER_RUNNING_SLTYPE}
-        exit 1
-    else
-        echo "No AVCs found for ${CHART_CONTAINER_RUNNING_SLTYPE}"
+        echo "No AVCs found for ${CONTAINER_RUNNING_SLTYPE}"
     fi
 }
 
@@ -201,10 +151,36 @@ function main(){
     installDependencies
     installRKE2
     installRancher
-    installRancherMonitoring
-    installRancherLogging
-    e2eRancherMonitoring
-    e2eRancherLogging
+
+    # Note: Append this list with new components to install and test the rancher-selinux policy
+    # Value: A space-separated list of arguments: 
+    #   Namespace DaemonSet PodLabel ContainerName ContainerRunningName SELinuxType ExtraHelmArgs
+    declare -A COMPONENTS=(
+        [rancher-monitoring]="cattle-monitoring-system rancher-monitoring-prometheus-node-exporter app.kubernetes.io/name=prometheus-node-exporter node-exporter node-exporter prom_node_exporter_t --set prometheus.prometheusSpec.maximumStartupDurationSeconds=60"
+        [rancher-logging]="cattle-logging-system rancher-logging-root-fluentbit app.kubernetes.io/name=fluentbit fluentbit fluent-bit rke_logreader_t"
+    )
+
+    for CHART_NAME in "${!COMPONENTS[@]}"; do
+        # Read the space-separated values into individual variables
+        read -r NAMESPACE DAEMONSET_NAME POD_LABEL CONTAINER_NAME CONTAINER_RUNNING_NAME SELINUX_TYPE EXTRA_HELM_ARGS <<< "${COMPONENTS[${CHART_NAME}]}"
+
+        echo "> Installing and testing Chart: ${CHART_NAME} in Namespace: ${NAMESPACE} with SELinux type ${SELINUX_TYPE}"
+
+        # 1. Install the chart (passing the collected variables)
+        installRancherChart \
+            "${CHART_NAME}" \
+            "${NAMESPACE}" \
+            "${DAEMONSET_NAME}" \
+            "${POD_LABEL}" \
+            "${EXTRA_HELM_ARGS}"
+
+        # 2. Run E2E SELinux Verification
+        e2eSELinuxVerification \
+            "${CONTAINER_NAME}" \
+            "${CONTAINER_RUNNING_NAME}" \
+            "${NAMESPACE}" \
+            "${SELINUX_TYPE}"
+    done
 }
 
 # This is needed as Rocky does not include it in the PATH,
