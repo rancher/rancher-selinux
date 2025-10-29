@@ -5,5 +5,12 @@
   "baseBranchPatterns": [
     "main"
   ],
-  "prHourlyLimit": 2
+  "prHourlyLimit": 2,
+  "packageRules": [
+    {
+      "matchPackageNames": ["fedora"],
+      "matchDatasources": ["docker"],
+      "allowedVersions": "<42.0.0"
+    }
+  ]
 }
