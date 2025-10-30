@@ -21,7 +21,7 @@ jobs:
           go-version: 'stable'
 
       - name: Load Secrets from Vault
-        uses: rancher-eio/read-vault-secrets@main
+        uses: rancher-eio/read-vault-secrets@0da85151ad1f19ed7986c41587e45aac1ace74b6
         with:
           secrets: |
             secret/data/github/repo/${{ github.repository }}/testing-private-key/credentials privateKey | TESTING_PRIVATE_KEY ;
