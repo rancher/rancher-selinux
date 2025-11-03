@@ -43,7 +43,7 @@ RUN dnf install -y \
         rpm-build \
         rpm-sign
 
-FROM opensuse/tumbleweed:latest@sha256:cd8148fd5d4a2e06fc65cb7026b6dff48b5f3496cfcd3a1543add6b72607eb3b AS microos
+FROM opensuse/tumbleweed:latest@sha256:fef63b8f471b4968309bbc9065a176202e30d67df56d3b8b9962a7cb8ea934d9 AS microos
 RUN zypper install -y \
         container-selinux \
         selinux-policy-devel \
