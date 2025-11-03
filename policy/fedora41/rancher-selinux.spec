@@ -11,6 +11,8 @@ Name:   rancher-selinux
 Version:	%{rancher_selinux_version}
 Release:	%{rancher_selinux_release}.fc41
 Summary:	SELinux policy module for Rancher
+Vendor:     SUSE LLC
+Packager:   SUSE LLC <https://www.suse.com/>
 
 Group:	System Environment/Base
 License:	Apache-2.0
