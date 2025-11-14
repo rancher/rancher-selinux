@@ -5,7 +5,7 @@
 
 %define relabel_files() \
 mkdir -p /var/lib/rancher/rke /etc/kubernetes /opt/rke; \
-restorecon -R /var/lib/rancher /etc/kubernetes /opt/rke;
+restorecon -FR -T 0 /var/lib/rancher /etc/kubernetes /opt/rke;
 
 Name:   rancher-selinux
 Version:	%{rancher_selinux_version}
