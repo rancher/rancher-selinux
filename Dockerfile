@@ -25,7 +25,7 @@ RUN yum install -y \
         rpm-build \
         rpm-sign
 
-FROM quay.io/centos/centos:stream9@sha256:ec0a24896f9b9fc8550e0ec6b2afd80954eaa057c078af40efc29b0451fec359 AS centos9
+FROM quay.io/centos/centos:stream9@sha256:e15ceb6e8744ccb658c6d8cb81cf2853398ca3a611f41f0b8e2fce655361190d AS centos9
 RUN yum install -y \
         createrepo_c \
         epel-release \
