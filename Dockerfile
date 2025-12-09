@@ -25,7 +25,7 @@ RUN yum install -y \
         rpm-build \
         rpm-sign
 
-FROM quay.io/centos/centos:stream9@sha256:e15ceb6e8744ccb658c6d8cb81cf2853398ca3a611f41f0b8e2fce655361190d AS centos9
+FROM quay.io/centos/centos:stream9@sha256:0bf070f10582acaa3c415280f769797025763c8a8e6509a5883592d0872a56d6 AS centos9
 RUN yum install -y \
         createrepo_c \
         epel-release \
@@ -35,7 +35,7 @@ RUN yum install -y \
         rpm-build \
         rpm-sign
 
-FROM fedora:41@sha256:c3643bda846169b342b400d4bbd1cb7022a7037e108b403a97305d1cb1644bcd AS fedora41
+FROM fedora:41@sha256:f1a3fab47bcb3c3ddf3135d5ee7ba8b7b25f2e809a47440936212a3a50957f3d AS fedora41
 RUN dnf install -y \
         createrepo_c \
         container-selinux \
@@ -43,7 +43,7 @@ RUN dnf install -y \
         rpm-build \
         rpm-sign
 
-FROM opensuse/tumbleweed:latest@sha256:fef63b8f471b4968309bbc9065a176202e30d67df56d3b8b9962a7cb8ea934d9 AS microos
+FROM opensuse/tumbleweed:latest@sha256:e6078e56685808dc36d5b31a13c80e4ecf1ebcae06476d8153d0d8be777f58ce AS microos
 RUN zypper install -y \
         container-selinux \
         selinux-policy-devel \

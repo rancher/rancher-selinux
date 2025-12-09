@@ -11,6 +11,16 @@
       "matchPackageNames": ["fedora"],
       "matchDatasources": ["docker"],
       "allowedVersions": "<42.0.0"
+    },
+    {
+      "matchDatasources": ["docker"],
+      "matchPackageNames": [
+        "quay.io/centos/centos",
+        "fedora",
+        "opensuse/tumbleweed"
+      ],
+      "schedule": ["on the first day of the month"],
+      "automerge": false 
     }
   ]
 }
