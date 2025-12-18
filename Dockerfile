@@ -4,7 +4,7 @@ ARG POLICY
 # to build the SELinux policies and package them as RPM for each
 # of the target platforms.
 
-FROM quay.io/centos/centos:stream8@sha256:20da069d4f8126c4517ee563e6e723d4cbe79ff62f6c4597f753478af91a09a3 AS centos8
+FROM quay.io/centos/centos:stream8 AS centos8
 
 
 # Stream8 is now EOL and the DNS it relied on for mirror lists
@@ -25,7 +25,7 @@ RUN yum install -y \
         rpm-build \
         rpm-sign
 
-FROM quay.io/centos/centos:stream9@sha256:0bf070f10582acaa3c415280f769797025763c8a8e6509a5883592d0872a56d6 AS centos9
+FROM quay.io/centos/centos:stream9 AS centos9
 RUN yum install -y \
         createrepo_c \
         epel-release \
@@ -35,7 +35,7 @@ RUN yum install -y \
         rpm-build \
         rpm-sign
 
-FROM fedora:41@sha256:f1a3fab47bcb3c3ddf3135d5ee7ba8b7b25f2e809a47440936212a3a50957f3d AS fedora41
+FROM fedora:41 AS fedora41
 RUN dnf install -y \
         createrepo_c \
         container-selinux \
@@ -43,7 +43,7 @@ RUN dnf install -y \
         rpm-build \
         rpm-sign
 
-FROM opensuse/tumbleweed:latest@sha256:e6078e56685808dc36d5b31a13c80e4ecf1ebcae06476d8153d0d8be777f58ce AS microos
+FROM opensuse/tumbleweed:latest AS microos
 RUN zypper install -y \
         container-selinux \
         selinux-policy-devel \
