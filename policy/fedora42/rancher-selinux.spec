@@ -1,7 +1,7 @@
 # vim: sw=4:ts=4:et
 
-%define selinux_policyver 41.36-1
-%define container_policyver 2.236.0-1
+%define selinux_policyver 42.19-1
+%define container_policyver 2.245.0-1
 
 %define relabel_files() \
 mkdir -p /var/lib/rancher/rke /etc/kubernetes /opt/rke; \
@@ -9,7 +9,7 @@ restorecon -R /var/lib/rancher /etc/kubernetes /opt/rke;
 
 Name:   rancher-selinux
 Version:	%{rancher_selinux_version}
-Release:	%{rancher_selinux_release}.fc41
+Release:	%{rancher_selinux_release}.fc42
 Summary:	SELinux policy module for Rancher
 Vendor:     SUSE LLC
 Packager:   SUSE LLC <https://www.suse.com/>

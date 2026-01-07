@@ -58,8 +58,8 @@ function upload_artefacts()
       "centos9")
         S3_POLICY_DIR="centos/9"
         ;;
-      "fedora41")
-        S3_POLICY_DIR="fedora/41"
+      "fedora42")
+        S3_POLICY_DIR="fedora/42"
         ;;
       "microos")
         S3_POLICY_DIR="microos"
