@@ -7,7 +7,7 @@ function enforceSELinux(){
     # Short circuit if SELinux is not being enforced.
     getenforce | grep -q Enforcing
     # Remove dontaudits from policy for debugging
-    sudo semodule -DB 
+    sudo semodule -DB
     # Install container-selinux and selinux-policy latest versions
     sudo dnf install -y container-selinux selinux-policy --best --allowerasing
     # Install rancher-selinux policy
@@ -61,6 +61,7 @@ function installRancher(){
     helm install cert-manager jetstack/cert-manager \
         --namespace cert-manager --create-namespace \
         --set crds.enabled=true
+    kubectl wait --for=condition=ready pod -l app.kubernetes.io/instance=cert-manager -n cert-manager --timeout=300s
 
     echo "> Installing Rancher Manager"
     kubectl create namespace cattle-system
@@ -68,13 +69,14 @@ function installRancher(){
     helm install rancher rancher-latest/rancher \
         --namespace cattle-system \
         --set hostname=rancher.local \
-        --set replicas=1
-    
+        --set replicas=1 \
+    	--wait
+
     # Background processes, such as Fleet deployment need to take place, which
-    # may result in intermittent errors. Adding some extra verification, 
+    # may result in intermittent errors. Adding some extra verification,
     # such as rancher-webhook deployment creation.
 
-    kubectl wait --for=condition=ready -n cattle-system pod -l app=rancher --timeout=240s
+    kubectl wait --for=condition=ready -n cattle-system pod -l app=rancher --timeout=600s
     kubectl wait --for=create -n cattle-system deployment/rancher-webhook --timeout=240s
     kubectl wait --for=condition=ready -n cattle-system pod -l app=rancher-webhook --timeout=240s
 }
@@ -93,14 +95,14 @@ function installRancherChart() {
     echo "> Installing CRD chart ${CHART_NAME}-crd in namespace ${NAMESPACE}"
     helm upgrade --install=true \
         --labels=catalog.cattle.io/cluster-repo-name=rancher-charts \
-        --namespace="${NAMESPACE}" --timeout=10m0s --wait=true \
+        --namespace="${NAMESPACE}" --timeout=20m0s --wait=true \
         --create-namespace \
         "${CHART_NAME}-crd" "rancher-charts/${CHART_NAME}-crd"
 
     echo "> Installing main chart ${CHART_NAME} with SELinux enabled"
     helm upgrade --install=true \
         --labels=catalog.cattle.io/cluster-repo-name=rancher-charts \
-        --namespace="${NAMESPACE}" --timeout=10m0s --wait=true \
+        --namespace="${NAMESPACE}" --timeout=20m0s --wait=true \
         --create-namespace \
         "${CHART_NAME}" "rancher-charts/${CHART_NAME}" \
         --set global.seLinux.enabled=true \
@@ -153,7 +155,7 @@ function main(){
     installRancher
 
     # Note: Append this list with new components to install and test the rancher-selinux policy
-    # Value: A space-separated list of arguments: 
+    # Value: A space-separated list of arguments:
     #   Namespace DaemonSet PodLabel ContainerName ContainerRunningName SELinuxType ExtraHelmArgs
     declare -A COMPONENTS=(
         [rancher-monitoring]="cattle-monitoring-system rancher-monitoring-prometheus-node-exporter app.kubernetes.io/name=prometheus-node-exporter node-exporter node-exporter prom_node_exporter_t --set prometheus.prometheusSpec.maximumStartupDurationSeconds=60"
