@@ -18,16 +18,3 @@ images:
   arch: "x86_64"
 - location: "https://dl.rockylinux.org/pub/rocky/8/images/aarch64/Rocky-8-GenericCloud.latest.aarch64.qcow2"
   arch: "aarch64"
-mountTypesUnsupported: ["9p"]
-mounts: []
-cpuType:
-  # Workaround for "vmx_write_mem: mmu_gva_to_gpa XXXXXXXXXXXXXXXX failed" on Intel Mac
-  # https://bugs.launchpad.net/qemu/+bug/1838390
-  x86_64: "Haswell-v4"
-
-provision:
-- mode: system
-  script: |
-    #!/bin/sh
-
-    yum in -y git jq container-selinux setools
