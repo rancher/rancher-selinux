@@ -52,7 +52,7 @@ The following list shows the expected tag to (example) transformation for RPM's
 
 [centos8]: https://github.com/rancher/rancher-selinux/tree/main/policy/centos8
 [centos9]: https://github.com/rancher/rancher-selinux/tree/main/policy/centos9
-[fedora41]: https://github.com/rancher/rancher-selinux/tree/main/policy/fedora41
+[fedora42]: https://github.com/rancher/rancher-selinux/tree/main/policy/fedora42
 [microos]: https://github.com/rancher/rancher-selinux/tree/main/policy/microos
 [fluentbit]: https://github.com/rancher/charts/blob/262597a41a175cfb4785d70fd76b33d56f8c1f95/charts/rancher-logging/106.0.1%2Bup4.10.0-rancher.4/templates/loggings/k3s/daemonset.yaml#L22
 [node-exporter]: https://github.com/rancher/charts/blob/262597a41a175cfb4785d70fd76b33d56f8c1f95/charts/rancher-monitoring/106.0.1%2Bup66.7.1-rancher.10/charts/prometheus-node-exporter/templates/daemonset.yaml#L51
