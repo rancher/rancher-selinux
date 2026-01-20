@@ -35,8 +35,8 @@ RUN yum install -y \
         rpm-build \
         rpm-sign
 
-FROM fedora:41 AS fedora41
-RUN dnf install -y \
+FROM fedora:42 AS fedora42
+RUN dnf clean all && dnf install -y \
         createrepo_c \
         container-selinux \
         selinux-policy-devel \

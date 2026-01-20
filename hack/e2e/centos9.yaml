@@ -16,12 +16,3 @@ images:
   arch: "x86_64"
 - location: "https://dl.rockylinux.org/pub/rocky/9/images/aarch64/Rocky-9-GenericCloud.latest.aarch64.qcow2"
   arch: "aarch64"
-mountTypesUnsupported: ["9p"]
-mounts: []
-
-provision:
-- mode: system
-  script: |
-    #!/bin/sh
-
-    yum in -y git jq container-selinux setools
