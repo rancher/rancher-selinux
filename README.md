@@ -22,6 +22,7 @@ The following Rancher compnents are covered by the policy:
 | :-------------------- | :------ | :----------------- | :--------- | :-------------------- |
 | RHEL/CentOS/Rocky     | 8       | :white_check_mark: | [centos8]  | :white_check_mark:    |
 | RHEL/CentOS/Rocky     | 9       | :white_check_mark: | [centos9]  | :white_check_mark:    |
+| RHEL/CentOS/Rocky     | 10      | :white_check_mark: | [centos10] | :white_check_mark:    |
 | Fedora                | 42      | :white_check_mark: | [fedora42] | :white_check_mark:    |
 | SUSE SLE/Micro        | Stable  | :white_check_mark: | [microos]  | :construction:        |
 
@@ -52,6 +53,7 @@ The following list shows the expected tag to (example) transformation for RPM's
 
 [centos8]: https://github.com/rancher/rancher-selinux/tree/main/policy/centos8
 [centos9]: https://github.com/rancher/rancher-selinux/tree/main/policy/centos9
+[centos10]: https://github.com/rancher/rancher-selinux/tree/main/policy/centos10
 [fedora42]: https://github.com/rancher/rancher-selinux/tree/main/policy/fedora42
 [microos]: https://github.com/rancher/rancher-selinux/tree/main/policy/microos
 [fluentbit]: https://github.com/rancher/charts/blob/262597a41a175cfb4785d70fd76b33d56f8c1f95/charts/rancher-logging/106.0.1%2Bup4.10.0-rancher.4/templates/loggings/k3s/daemonset.yaml#L22

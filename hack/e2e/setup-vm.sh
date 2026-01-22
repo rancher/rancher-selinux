@@ -6,11 +6,15 @@ function enforceSELinux(){
     echo "> Check SELinux status"
     # Short circuit if SELinux is not being enforced.
     getenforce | grep -q Enforcing
-    # Remove dontaudits from policy for debugging
+    # Remove dontaudits from policy for debugging.
     sudo semodule -DB
-    # Install container-selinux and selinux-policy latest versions
+    # Install extra kernel modules needed for networking/conntrack (EL10 requirement).
+    # See: https://docs.rke2.io/install/requirements#linux
+    # We target $(uname -r) to ensure modules match the running kernel and avoid a reboot.
+    sudo dnf install "kernel-modules-extra-$(uname -r)" -y
+    # Install container-selinux and selinux-policy latest versions.
     sudo dnf install -y container-selinux selinux-policy --best --allowerasing
-    # Install rancher-selinux policy
+    # Install rancher-selinux policy.
     sudo dnf install -y /tmp/rancher-selinux.rpm
 }
 
@@ -40,13 +44,17 @@ function installDependencies(){
 
 function installRKE2(){
     echo "> Installing RKE2"
-    curl -sfL https://get.rke2.io | sh -
+    # Download the official RKE2 installer script and patch the script to include EL10 in the RPM-based OS detection logic.
+    # This changes '7|8|9)' to '7|8|9|10)' so the script doesn't fall back to a generic tarball install.
+    # TODO: use the default install command once https://github.com/rancher/rke2/pull/9557 is merged.
+    curl -sfL https://get.rke2.io -o install.sh
+    sed -i 's/7|8|9)/7|8|9|10)/g' install.sh && sh install.sh
     systemctl start rke2-server.service
     systemctl enable rke2-server.service
 
     export KUBECONFIG=/etc/rancher/rke2/rke2.yaml
     echo "export KUBECONFIG=/etc/rancher/rke2/rke2.yaml" >> ~/.bashrc
-    # Making the kubeconfig world-readable, as this is for tests purposes only.
+    # Making the kubeconfig world-readable, as this is for test purposes only.
     chmod +r /etc/rancher/rke2/rke2.yaml
 
     kubectl wait --for=create node/$(hostname) --timeout=240s
@@ -70,26 +78,24 @@ function installRancher(){
         --namespace cattle-system \
         --set hostname=rancher.local \
         --set replicas=1 \
-    	--wait
+        --wait
 
-    # Background processes, such as Fleet deployment need to take place, which
-    # may result in intermittent errors. Adding some extra verification,
-    # such as rancher-webhook deployment creation.
-
+    # Background processes, such as Fleet deployment need to take place, which may result in intermittent errors.
+    # Adding some extra verification, such as rancher-webhook deployment creation.
     kubectl wait --for=condition=ready -n cattle-system pod -l app=rancher --timeout=600s
     kubectl wait --for=create -n cattle-system deployment/rancher-webhook --timeout=240s
     kubectl wait --for=condition=ready -n cattle-system pod -l app=rancher-webhook --timeout=240s
 }
 
-# Example: installRancherChart "rancher-monitoring" "cattle-monitoring-system" "rancher-monitoring-prometheus-node-exporter" "app.kubernetes.io/name=prometheus-node-exporter" "--set prometheus.prometheusSpec.maximumStartupDurationSeconds=60"
+# Example: installRancherChart "rancher-monitoring" "cattle-monitoring-system" "rancher-monitoring-prometheus-node-exporter" "app.kubernetes.io/name=prometheus-node-exporter" "--set ...".
 function installRancherChart() {
     local CHART_NAME="$1"
     local NAMESPACE="$2"
     local DAEMONSET_NAME="$3"
     local POD_LABEL_SELECTOR="$4"
-    local EXTRA_HELM_ARGS="${@:5}" # Collect any additional arguments
+    local EXTRA_HELM_ARGS="${@:5}" # Collect any additional arguments.
 
-    # Add Rancher charts repository
+    # Add Rancher charts repository.
     helm repo add rancher-charts https://charts.rancher.io/
 
     echo "> Installing CRD chart ${CHART_NAME}-crd in namespace ${NAMESPACE}"
@@ -108,7 +114,7 @@ function installRancherChart() {
         --set global.seLinux.enabled=true \
         ${EXTRA_HELM_ARGS}
 
-    # Wait for DaemonSet creation and Pod readiness
+    # Wait for DaemonSet creation and Pod readiness.
     kubectl wait --for=create -n "${NAMESPACE}" daemonset/"${DAEMONSET_NAME}" --timeout=240s
     kubectl wait --for=condition=ready -n "${NAMESPACE}" pod -l "${POD_LABEL_SELECTOR}" --timeout=240s
 }
@@ -125,12 +131,12 @@ function uninstallRancherChart() {
     echo "> Deleting namespace ${NAMESPACE}"
     kubectl delete ns "${NAMESPACE}" --timeout=120s
 
-    # Force-reclaim caches to provide a clean memory slate for the next chart test
-    # This was added to help mitigate time-out issues in e2e
+    # Force-reclaim caches to provide a clean memory slate for the next chart test.
+    # This was added to help mitigate time-out issues in e2e.
     sudo sync && echo 3 > /proc/sys/vm/drop_caches
 }
 
-# Example: e2eSELinuxVerification "fluentbit" "fluent-bit" "cattle-logging-system" "rke_logreader_t"
+# Example: e2eSELinuxVerification "fluentbit" "fluent-bit" "cattle-logging-system" "rke_logreader_t".
 function e2eSELinuxVerification(){
     local CONTAINER_NAME="$1"
     local CONTAINER_RUNNING_NAME="$2"
@@ -171,21 +177,20 @@ function main(){
     installRKE2
     installRancher
 
-    # Note: Append this list with new components to install and test the rancher-selinux policy
-    # Value: A space-separated list of arguments:
-    #   Namespace DaemonSet PodLabel ContainerName ContainerRunningName SELinuxType ExtraHelmArgs
+    # Note: Append this list with new components to install and test the rancher-selinux policy.
+    # Value: A space-separated list of arguments: Namespace DaemonSet PodLabel ContainerName ContainerRunningName SELinuxType ExtraHelmArgs.
     declare -A COMPONENTS=(
         [rancher-monitoring]="cattle-monitoring-system rancher-monitoring-prometheus-node-exporter app.kubernetes.io/name=prometheus-node-exporter node-exporter node-exporter prom_node_exporter_t --set prometheus.prometheusSpec.maximumStartupDurationSeconds=60"
         [rancher-logging]="cattle-logging-system rancher-logging-root-fluentbit app.kubernetes.io/name=fluentbit fluentbit fluent-bit rke_logreader_t"
     )
 
     for CHART_NAME in "${!COMPONENTS[@]}"; do
-        # Read the space-separated values into individual variables
+        # Read the space-separated values into individual variables.
         read -r NAMESPACE DAEMONSET_NAME POD_LABEL CONTAINER_NAME CONTAINER_RUNNING_NAME SELINUX_TYPE EXTRA_HELM_ARGS <<< "${COMPONENTS[${CHART_NAME}]}"
 
         echo "> Installing and testing Chart: ${CHART_NAME} in Namespace: ${NAMESPACE} with SELinux type ${SELINUX_TYPE}"
 
-        # 1. Install the chart (passing the collected variables)
+        # 1. Install the chart (passing the collected variables).
         installRancherChart \
             "${CHART_NAME}" \
             "${NAMESPACE}" \
@@ -193,23 +198,21 @@ function main(){
             "${POD_LABEL}" \
             "${EXTRA_HELM_ARGS}"
 
-        # 2. Run E2E SELinux Verification
+        # 2. Run E2E SELinux Verification.
         e2eSELinuxVerification \
             "${CONTAINER_NAME}" \
             "${CONTAINER_RUNNING_NAME}" \
             "${NAMESPACE}" \
             "${SELINUX_TYPE}"
 
-        # 3. Uninstall the chart (free some resources)
+        # 3. Uninstall the chart (free some resources).
         uninstallRancherChart \
             "${CHART_NAME}" \
             "${NAMESPACE}"
     done
 }
 
-# This is needed as Rocky does not include it in the PATH,
-# which is required for the Helm install.
+# Rocky does not include this in the PATH by default, which is required for Helm.
 export PATH=$PATH:/usr/local/bin
 
 main
-

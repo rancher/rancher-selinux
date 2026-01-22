@@ -35,6 +35,17 @@ RUN yum install -y \
         rpm-build \
         rpm-sign
 
+FROM quay.io/centos/centos:stream10 AS centos10
+RUN yum install -y \
+        createrepo_c \
+        epel-release \
+        container-selinux \
+        selinux-policy-devel \
+        yum-utils \
+        rpm-build \
+        rpm-sign \
+        gnupg2
+
 FROM fedora:42 AS fedora42
 RUN dnf clean all && dnf install -y \
         createrepo_c \
