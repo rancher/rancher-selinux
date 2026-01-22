@@ -112,12 +112,10 @@ e2e-%:
 	limactl cp hack/e2e/setup-vm.sh $(subst :,/,$*):/tmp/setup-vm.sh
 	limactl shell $(subst :,/,$*) sudo /tmp/setup-vm.sh
 
-	limactl stop $(subst :,/,$*)
-	limactl delete $(subst :,/,$*)
+	limactl delete -f $(subst :,/,$*)
 
 e2e-%-clean:
-	limactl stop $(subst :,/,$*)
-	limactl delete $(subst :,/,$*)
+	limactl delete -f $(subst :,/,$*)
 
 help: ## display Makefile's help.
 	@awk 'BEGIN {FS = ":.*##"; printf "\nUsage:\n  make \033[36m<target>\033[0m\n"} /^[a-zA-Z_0-9-]+:.*?##/ { printf "  \033[36m%-15s\033[0m %s\n", $$1, $$2 } /^##@/ { printf "\n\033[1m%s\033[0m\n", substr($$0, 5) } ' $(MAKEFILE_LIST)
