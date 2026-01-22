@@ -20,7 +20,6 @@ The following Rancher compnents are covered by the policy:
 
 | Operating System      | Version | Supported          | Policy     | E2E                   |
 | :-------------------- | :------ | :----------------- | :--------- | :-------------------- |
-| RHEL/CentOS/Rocky     | 8       | :white_check_mark: | [centos8]  | :white_check_mark:    |
 | RHEL/CentOS/Rocky     | 9       | :white_check_mark: | [centos9]  | :white_check_mark:    |
 | RHEL/CentOS/Rocky     | 10      | :white_check_mark: | [centos10] | :white_check_mark:    |
 | Fedora                | 42      | :white_check_mark: | [fedora42] | :white_check_mark:    |
@@ -51,7 +50,6 @@ The following list shows the expected tag to (example) transformation for RPM's
 | v0.2.testing.1 | Clean | `rancher-selinux-0.2-1.el7.noarch.rpm` | Testing ||
 | v0.2.production.1 | Clean | `rancher-selinux-0.2-1.el7.noarch.rpm` | Production ||
 
-[centos8]: https://github.com/rancher/rancher-selinux/tree/main/policy/centos8
 [centos9]: https://github.com/rancher/rancher-selinux/tree/main/policy/centos9
 [centos10]: https://github.com/rancher/rancher-selinux/tree/main/policy/centos10
 [fedora42]: https://github.com/rancher/rancher-selinux/tree/main/policy/fedora42

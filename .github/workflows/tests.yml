@@ -24,7 +24,7 @@ jobs:
   e2e:
     strategy:
       matrix:
-        distro: [centos8, centos9, centos10, fedora42]
+        distro: [centos9, centos10, fedora42]
 
     runs-on: ubuntu-latest
     steps:
