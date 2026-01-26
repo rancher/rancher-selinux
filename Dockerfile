@@ -4,27 +4,6 @@ ARG POLICY
 # to build the SELinux policies and package them as RPM for each
 # of the target platforms.
 
-FROM quay.io/centos/centos:stream8 AS centos8
-
-
-# Stream8 is now EOL and the DNS it relied on for mirror lists
-# (mirrorlist.centos.org), no longer resolves.
-# The adhoc solution is to disable the use of the mirrorlist and default
-# to vault.centos.org instead.
-#
-# https://blog.centos.org/2023/04/end-dates-are-coming-for-centos-stream-8-and-centos-linux-7/
-RUN sed -i 's/mirrorlist/#mirrorlist/g' /etc/yum.repos.d/CentOS-* && \
-        sed -i 's|#baseurl=http://mirror.centos.org|baseurl=http://vault.centos.org|g' /etc/yum.repos.d/CentOS-*
-
-RUN yum install -y \
-        createrepo_c \
-        epel-release \
-        container-selinux \
-        selinux-policy-devel \
-        yum-utils \
-        rpm-build \
-        rpm-sign
-
 FROM quay.io/centos/centos:stream9 AS centos9
 RUN yum install -y \
         createrepo_c \
@@ -34,6 +13,17 @@ RUN yum install -y \
         yum-utils \
         rpm-build \
         rpm-sign
+
+FROM quay.io/centos/centos:stream10 AS centos10
+RUN yum install -y \
+        createrepo_c \
+        epel-release \
+        container-selinux \
+        selinux-policy-devel \
+        yum-utils \
+        rpm-build \
+        rpm-sign \
+        gnupg2
 
 FROM fedora:42 AS fedora42
 RUN dnf clean all && dnf install -y \

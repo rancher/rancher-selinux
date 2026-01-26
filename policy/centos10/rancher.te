@@ -4,7 +4,7 @@ gen_require(`
     type container_runtime_t, unconfined_service_t, container_file_t;
     type kubernetes_file_t, container_log_t, syslogd_var_run_t;
     type var_log_t, container_var_run_t, container_var_lib_t;
-    type iptables_var_run_t, var_run_t, kernel_t, rke_opt_t, security_t;
+    type iptables_var_run_t, var_run_t, kernel_t, rke_opt_t;
     class dir { open read search watch };
     class file { getaddr getattr map open read watch relabelfrom relabelto };
     class lnk_file { getattr read };
@@ -93,7 +93,7 @@ allow rke_network_t kernel_t:unix_dgram_socket sendto;
 allow rke_network_t self:netlink_route_socket nlmsg_write;
 
 ############################################################################
-# type prom_node_exporter_t                                                #
+# type: prom_node_exporter_t                                               #
 # target: prometheus-node-exporter container for Rancher monitoring chart  #
 ############################################################################
 
@@ -102,5 +102,5 @@ virt_sandbox_domain(prom_node_exporter_t)
 corenet_tcp_bind_generic_node(prom_node_exporter_t)
 corenet_tcp_bind_generic_port(prom_node_exporter_t)
 init_read_state(prom_node_exporter_t)
+selinux_read_security_files(prom_node_exporter_t)
 allow prom_node_exporter_t self:tcp_socket listen;
-allow prom_node_exporter_t security_t:file { getattr open read };
