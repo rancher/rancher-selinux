@@ -1,0 +1,18 @@
+minimumLimaVersion: 2.0.0
+
+images:
+# Hint: run `limactl prune` to invalidate the "Current" cache
+- location: https://download.opensuse.org/tumbleweed/appliances/openSUSE-Tumbleweed-Minimal-VM.x86_64-Cloud.qcow2
+  arch: x86_64
+
+- location: https://download.opensuse.org/ports/aarch64/tumbleweed/appliances/openSUSE-Tumbleweed-Minimal-VM.aarch64-Cloud.qcow2
+  arch: aarch64
+
+provision:
+- mode: system
+  script: |
+    zypper --gpg-auto-import-keys ref
+    # install diffutils for lima shell (related issue: https://github.com/lima-vm/lima/issues/4659)
+    # install openssl for helm setup (error: please install openssl or set VERIFY_CHECKSUM=false in your environment.Failed to install helm)
+    # install iptables for rke2-ingress-nginx-controller-8zlzd (error: executable file not found in $PATH)
+    zypper --non-interactive install -y diffutils openssl iptables
