@@ -6,6 +6,24 @@ function isSUSE(){
     grep -qi "suse" /etc/os-release
 }
 
+function verifyPolicyPresence() {
+    local pkgs=("rancher-selinux" "rke2-selinux")
+    local types=("prom_node_exporter_t" "rke2_service_t")
+
+    for i in "${!pkgs[@]}"; do
+        local p="${pkgs[$i]}"
+        local t="${types[$i]}"
+        local m="${p%-selinux}"
+
+        rpm -q "$p" >/dev/null 2>&1 || { echo "ERROR: RPM $p not installed"; return 1; }
+        semodule -l | grep -w "$m" || { echo "ERROR: Module $m not loaded"; return 1; }
+        seinfo -t "$t" >/dev/null 2>&1 || { echo "ERROR: Type $t unknown"; return 1; }
+    done
+
+    echo "SELinux policies verified successfully."
+    return 0
+}
+
 function enforceSELinux(){
     echo "> Check SELinux status"
     # Short circuit if SELinux is not being enforced.
@@ -190,6 +208,7 @@ function main(){
     enforceSELinux
     installDependencies
     installRKE2
+    verifyPolicyPresence
     installRancher
 
     # Note: Append this list with new components to install and test the rancher-selinux policy.
