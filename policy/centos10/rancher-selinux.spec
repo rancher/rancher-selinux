@@ -1,7 +1,7 @@
 # vim: sw=4:ts=4:et
 
 %define selinux_policyver 42.1.7-1
-%define container_policyver 2.244.0-1
+%define container_policyver 2.240.0-1
 
 %define relabel_files() \
 mkdir -p /var/lib/rancher/rke /etc/kubernetes /opt/rke; \
@@ -20,7 +20,7 @@ URL:		http://rancher.com
 Source0:	rancher.pp
 
 Requires: policycoreutils, libselinux-utils
-Requires(post): selinux-policy-base >= %{selinux_policyver}, policycoreutils, container-selinux >= %{container_policyver}
+Requires(post): selinux-policy >= %{selinux_policyver}, policycoreutils, container-selinux >= %{container_policyver}
 Requires(postun): policycoreutils
 
 BuildArch: noarch
