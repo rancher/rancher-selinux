@@ -23,7 +23,7 @@ The following Rancher compnents are covered by the policy:
 | RHEL/CentOS/Rocky     | 9       | :white_check_mark: | [centos9]  | :white_check_mark:    |
 | RHEL/CentOS/Rocky     | 10      | :white_check_mark: | [centos10] | :white_check_mark:    |
 | Fedora                | 42      | :white_check_mark: | [fedora42] | :white_check_mark:    |
-| SUSE SLE/Micro        | Stable  | :white_check_mark: | [microos]  | :construction:        |
+| SUSE SLE/Micro        | Stable  | :white_check_mark: | [microos]  | :white_check_mark:    |
 
 ## Versioning/Tagging
 

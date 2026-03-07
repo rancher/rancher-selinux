@@ -1,6 +1,6 @@
 # vim: sw=4:ts=4:et
 
-%define selinux_policyver 38.1.45-3
+%define selinux_policyver 2.240.0-3
 %define container_policyver 2.232.1-1
 
 %define relabel_files() \
@@ -20,7 +20,7 @@ URL:		http://rancher.com
 Source0:	rancher.pp
 
 Requires: policycoreutils, libselinux-utils
-Requires(post): selinux-policy-base >= %{selinux_policyver}, policycoreutils, container-selinux >= %{container_policyver}
+Requires(post): selinux-policy >= %{selinux_policyver}, policycoreutils, container-selinux >= %{container_policyver}
 Requires(postun): policycoreutils
 
 BuildArch: noarch
