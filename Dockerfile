@@ -4,7 +4,7 @@ ARG POLICY
 # to build the SELinux policies and package them as RPM for each
 # of the target platforms.
 
-FROM quay.io/rockylinux/rockylinux:9 AS centos9
+FROM quay.io/rockylinux/rockylinux:10 AS centos9
 RUN yum install -y \
         createrepo_c \
         epel-release \
