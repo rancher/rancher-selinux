@@ -104,3 +104,27 @@ corenet_tcp_bind_generic_port(prom_node_exporter_t)
 init_read_state(prom_node_exporter_t)
 selinux_read_security_files(prom_node_exporter_t)
 allow prom_node_exporter_t self:tcp_socket listen;
+
+############################################################################
+# type: rancher_aiagent_container_t                                        #
+# project: rancher/rancher-ai-agent                                        #
+# target: rancher-ai-agent container for Rancher AI                        #
+############################################################################
+
+container_domain_template(rancher_aiagent_container, container)
+corenet_tcp_bind_generic_node(rancher_aiagent_container_t)
+corenet_tcp_bind_soundd_port(rancher_aiagent_container_t)
+corenet_tcp_connect_http_port(rancher_aiagent_container_t)
+allow rancher_aiagent_container_t self:tcp_socket listen;
+
+############################################################################
+# type: rancher_aimcp_container_t				           #
+# project: rancher/rancher-ai-mcp                                          #
+# target: rancher-mcp-server container for Rancher AI                      #
+############################################################################
+
+container_domain_template(rancher_aimcp_container, container)
+corenet_tcp_bind_generic_node(rancher_aimcp_container_t)
+corenet_tcp_bind_generic_port(rancher_aimcp_container_t)
+corenet_tcp_connect_http_port(rancher_aimcp_container_t)
+allow rancher_aimcp_container_t self:tcp_socket listen;

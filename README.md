@@ -6,15 +6,19 @@ For more information about enabling SELinux on Rancher or installing the rancher
 
 ## Coverage of rancher-selinux
 
-The following Rancher compnents are covered by the policy:
+The following Rancher components are covered by the policy:
 
-| Component                  | Service/Container                                                        | SELinux Type           |
-| :------------------------- | :----------------------------------------------------------------------- | :--------------------- |
-| Rancher Monitoring Chart   | [node-exporter]                                                          | `prom_node_exporter_t` |
-| Rancher Monitoring Chart   | [pushprox]                                                               | `rke_kubereader_t`     |
-| Rancher Logging Chart      | [fluentbit]                                                              | `rke_logreader_t`      |
-| RKE1                       | [flannel]                                                                | `rke_network_t`        |
-| RKE1                       | [rke] `etcd`, `rke-etcd-backup`, `kube-{apiserver,controller,scheduler}` | `rke_container_t`      |
+| Component | Service/Container | SELinux Type | CentOS 9/10 | MicroOS | Fedora 42 | E2E | Status |
+| :--- | :--- | :--- | :---: | :---: | :---: | :---: | :--- |
+| Rancher Monitoring | [node-exporter] | `prom_node_exporter_t` | :white_check_mark: | :white_check_mark: | :white_check_mark: | :white_check_mark: | Production |
+| Rancher Monitoring | [pushprox] | `rke_kubereader_t` | :white_check_mark: | :white_check_mark: | :white_check_mark: | :white_check_mark: | Production |
+| Rancher Logging | [fluentbit] | `rke_logreader_t` | :white_check_mark: | :white_check_mark: | :white_check_mark: | :white_check_mark: | Production |
+| Rancher AI | [rancher-ai-agent] | `rancher_aiagent_container_t` | :white_check_mark: | :construction: | :construction: | :construction: | Testing |
+| Rancher AI | [rancher-ai-mcp] | `rancher_aimcp_container_t` | :white_check_mark: | :construction: | :construction: | :construction: | Testing |
+| RKE1 | [flannel] | `rke_network_t` | :white_check_mark: | :white_check_mark: | :white_check_mark: | :white_check_mark: | Production |
+| RKE1 | [rke] `etcd`, `kube-apiserver`, etc. | `rke_container_t` | :white_check_mark: | :white_check_mark: | :white_check_mark: | :white_check_mark: | Production |
+
+> **Note:** Only the specific charts and services listed above are assigned a dedicated SELinux type (within the container domain). Other Rancher components and general workloads will typically inherit the default `container_t` type provided by the base `container-selinux` policy.
 
 ## Support Matrix
 
@@ -59,3 +63,5 @@ The following list shows the expected tag to (example) transformation for RPM's
 [flannel]: https://github.com/rancher/kontainer-driver-metadata/blob/34e1e8a7a157daae54b310b199aa663c9a2ef314/rke/templates/flannel_v0.14.0.go#L239
 [pushprox]: https://github.com/rancher/charts/tree/dev-v2.11/charts/rancher-monitoring/106.0.1%2Bup66.7.1-rancher.10/charts/rkeEtcd
 [rke]: https://github.com/rancher/rke/blob/5756a3837a3c49d61f1ea2120b02149c21e4a443/hosts/hosts.go#L55
+[rancher-ai-agent]: https://github.com/rancher/rancher-ai-agent
+[rancher-ai-mcp]: https://github.com/rancher/rancher-ai-mcp
