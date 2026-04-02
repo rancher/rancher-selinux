@@ -17,6 +17,11 @@ on:
 permissions:
   contents: read
 
+env:
+  LIMA_VERSION: v2.1.0
+  LIMA_SHA256: 9e52c605790649aceac1f894eb2bb7cdb45897257faafb54ff30ce6a576bebfa
+  LIMA_GUESTAGENTS_SHA256: f77730b5295e03f4cb4bfb8eeb3661fdde6c592a33bae4a2a68cecc03a93da8a
+
 jobs:
   e2e:
     strategy:
@@ -40,14 +45,17 @@ jobs:
     - name: Install Lima
       run: |
         set -eux
-        LIMA_VERSION="v2.1.0"
-        FILE="lima-${LIMA_VERSION:1}-Linux-x86_64.tar.gz"
-        curl -fOSL "https://github.com/lima-vm/lima/releases/download/${LIMA_VERSION}/${FILE}"
-        curl -fOSL "https://github.com/lima-vm/lima/releases/download/${LIMA_VERSION}/SHA256SUMS"
-        sha256sum --check --ignore-missing SHA256SUMS
-        sudo tar Cxzvf /usr/local "${FILE}"
-        rm -f "${FILE}" SHA256SUMS
-        echo "LIMA_VERSION=${LIMA_VERSION}" >> $GITHUB_ENV
+        LIMA_FILE="lima-${LIMA_VERSION:1}-$(uname -s)-$(uname -m).tar.gz"
+        AGENTS_FILE="lima-additional-guestagents-${LIMA_VERSION:1}-$(uname -s)-$(uname -m).tar.gz"
+        
+        curl -fsSLO "https://github.com/lima-vm/lima/releases/download/${LIMA_VERSION}/${LIMA_FILE}"
+        curl -fsSLO "https://github.com/lima-vm/lima/releases/download/${LIMA_VERSION}/${AGENTS_FILE}"
+
+        echo "${LIMA_SHA256}  ${LIMA_FILE}" | sha256sum -c -
+        echo "${LIMA_GUESTAGENTS_SHA256}  ${AGENTS_FILE}" | sha256sum -c -
+
+        sudo tar Cxzvm /usr/local -f "${LIMA_FILE}"
+        sudo tar Cxzvm /usr/local -f "${AGENTS_FILE}"
 
     - name: Cache ~/.cache/lima
       uses: actions/cache@668228422ae6a00e4ad889ee87cd7109ec5666a7 # v5.0.4
