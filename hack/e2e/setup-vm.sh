@@ -2,6 +2,16 @@
 
 set -euxo pipefail
 
+HELM_VERSION="v3.17.3"
+HELM_SHA256_amd64="ee88b3c851ae6466a3de507f7be73fe94d54cbf2987cbaa3d1a3832ea331f2cd"
+HELM_SHA256_arm64="7944e3defd386c76fd92d9e6fec5c2d65a323f6fadc19bfb5e704e3eee10348e"
+
+KUBECTL_VERSION="v1.35.3"
+KUBECTL_SHA256_amd64="fd31c7d7129260e608f6faf92d5984c3267ad0b5ead3bced2fe125686e286ad6"
+KUBECTL_SHA256_arm64="6f0cd088a82dde5d5807122056069e2fac4ed447cc518efc055547ae46525f14"
+
+INSTALL_RKE2_VERSION="v1.35.3+rke2r1"
+
 function isSUSE(){
     grep -qi "suse" /etc/os-release
 }
@@ -57,27 +67,34 @@ function installDependencies(){
         sudo dnf install -y jq git setools policycoreutils-python-utils
     fi
 
-    echo "> Installing Helm 3"
-    curl https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3 | bash
-    helm version
-
-    local KUBECTL_VERSION
-    KUBECTL_VERSION=$(curl -L -s https://dl.k8s.io/release/stable.txt)
     ARCH=$(uname -m)
     [[ "${ARCH}" == "aarch64" ]] && ARCH="arm64"
     [[ "${ARCH}" == "x86_64" ]] && ARCH="amd64"
 
+    echo "> Installing Helm ${HELM_VERSION}"
+    local HELM_SHA256_VAR="HELM_SHA256_${ARCH}"
+    local HELM_SHA256="${!HELM_SHA256_VAR}"
+    local HELM_FILE="helm-${HELM_VERSION}-linux-${ARCH}.tar.gz"
+    curl -fsSLO "https://get.helm.sh/${HELM_FILE}"
+    echo "${HELM_SHA256}  ${HELM_FILE}" | sha256sum -c -
+    tar xzf "${HELM_FILE}"
+    install -o root -g root -m 0755 linux-${ARCH}/helm /usr/local/bin/helm
+    rm -rf linux-${ARCH} "${HELM_FILE}"
+    helm version
+
     echo "> Installing kubectl ${KUBECTL_VERSION} for ${ARCH}"
-    curl -LO "https://dl.k8s.io/release/${KUBECTL_VERSION}/bin/linux/${ARCH}/kubectl"
-    curl -LO "https://dl.k8s.io/release/${KUBECTL_VERSION}/bin/linux/${ARCH}/kubectl.sha256"
-    echo "$(<kubectl.sha256)  kubectl" | sha256sum -c -
+    local KUBECTL_SHA256_VAR="KUBECTL_SHA256_${ARCH}"
+    local KUBECTL_SHA256="${!KUBECTL_SHA256_VAR}"
+    curl -fsSLO "https://dl.k8s.io/release/${KUBECTL_VERSION}/bin/linux/${ARCH}/kubectl"
+    echo "${KUBECTL_SHA256}  kubectl" | sha256sum -c -
     install -o root -g root -m 0755 kubectl /usr/bin/kubectl
+    rm -f kubectl
     kubectl version --client=true
 }
 
 function installRKE2(){
-    echo "> Installing RKE2"
-    curl -sfL https://get.rke2.io | sh -
+    echo "> Installing RKE2 ${INSTALL_RKE2_VERSION}"
+    curl -sfL https://get.rke2.io | INSTALL_RKE2_VERSION="${INSTALL_RKE2_VERSION}" sh -
     # RKE2 install script does not install the SELinux policy by default for tumbleweed; manual setup required.
     if isSUSE; then
         sudo zypper -n install rke2-selinux
@@ -214,7 +231,7 @@ function main(){
     # Note: Append this list with new components to install and test the rancher-selinux policy.
     # Value: A space-separated list of arguments: Namespace DaemonSet PodLabel ContainerName ContainerRunningName SELinuxType ExtraHelmArgs.
     declare -A COMPONENTS=(
-        [rancher-monitoring]="cattle-monitoring-system rancher-monitoring-prometheus-node-exporter app.kubernetes.io/name=prometheus-node-exporter node-exporter node-exporter prom_node_exporter_t --set prometheus.prometheusSpec.maximumStartupDurationSeconds=60"
+        [rancher-monitoring]="cattle-monitoring-system rancher-monitoring-prometheus-node-exporter app.kubernetes.io/name=prometheus-node-exporter node-exporter node-exporter prom_node_exporter_t --set prometheus-node-exporter.seLinuxOptions.type=prom_node_exporter_t"
         [rancher-logging]="cattle-logging-system rancher-logging-root-fluentbit app.kubernetes.io/name=fluentbit fluentbit fluent-bit rke_logreader_t"
     )
 
