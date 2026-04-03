@@ -4,13 +4,11 @@ on:
   push:
     paths:
       - 'policy/**'
-      - 'hack/**'
       - 'Dockerfile'
       - 'Makefile'
   pull_request:
     paths:
       - 'policy/**'
-      - 'hack/**'
       - 'Dockerfile'
       - 'Makefile'
 
