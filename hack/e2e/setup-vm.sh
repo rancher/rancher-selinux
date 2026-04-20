@@ -76,7 +76,7 @@ function installDependencies(){
     local HELM_SHA256="${!HELM_SHA256_VAR}"
     local HELM_FILE="helm-${HELM_VERSION}-linux-${ARCH}.tar.gz"
     curl -fsSLO "https://get.helm.sh/${HELM_FILE}"
-    echo "${HELM_SHA256}  ${HELM_FILE}" | sha256sum -c -
+    echo "${HELM_SHA256}  ${HELM_FILE}" | sha256sum -c - --strict
     tar xzf "${HELM_FILE}"
     install -o root -g root -m 0755 linux-${ARCH}/helm /usr/local/bin/helm
     rm -rf linux-${ARCH} "${HELM_FILE}"
@@ -86,21 +86,22 @@ function installDependencies(){
     local KUBECTL_SHA256_VAR="KUBECTL_SHA256_${ARCH}"
     local KUBECTL_SHA256="${!KUBECTL_SHA256_VAR}"
     curl -fsSLO "https://dl.k8s.io/release/${KUBECTL_VERSION}/bin/linux/${ARCH}/kubectl"
-    echo "${KUBECTL_SHA256}  kubectl" | sha256sum -c -
+    echo "${KUBECTL_SHA256}  kubectl" | sha256sum -c - --strict
     install -o root -g root -m 0755 kubectl /usr/bin/kubectl
     rm -f kubectl
     kubectl version --client=true
 }
 
 function installRKE2(){
-    echo "> Installing RKE2 ${INSTALL_RKE2_VERSION}"
-    curl -sfL https://get.rke2.io | INSTALL_RKE2_VERSION="${INSTALL_RKE2_VERSION}" sh -
+    echo "> Installing RKE2 ${INSTALL_RKE2_VERSION} for ${ARCH}"
+    curl -sfL https://get.rke2.io -o install.sh
+    INSTALL_RKE2_VERSION="${INSTALL_RKE2_VERSION}" sh install.sh
+    rm -f install.sh
     # RKE2 install script does not install the SELinux policy by default for tumbleweed; manual setup required.
     if isSUSE; then
         sudo zypper -n install rke2-selinux
     fi
-    systemctl start rke2-server.service
-    systemctl enable rke2-server.service
+    systemctl enable --now rke2-server.service
 
     export KUBECONFIG=/etc/rancher/rke2/rke2.yaml
     echo "export KUBECONFIG=/etc/rancher/rke2/rke2.yaml" >> ~/.bashrc
