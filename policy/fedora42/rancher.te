@@ -114,7 +114,7 @@ corenet_tcp_connect_http_port(rancher_aiagent_container_t)
 allow rancher_aiagent_container_t self:tcp_socket listen;
 
 ############################################################################
-# type: rancher_aimcp_container_t				           #
+# type: rancher_aimcp_container_t				                           #
 # project: rancher/rancher-ai-mcp                                          #
 # target: rancher-mcp-server container for Rancher AI                      #
 ############################################################################

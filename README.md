@@ -13,8 +13,8 @@ The following Rancher components are covered by the policy:
 | Rancher Monitoring | [node-exporter] | `prom_node_exporter_t` | :white_check_mark: | :white_check_mark: | :white_check_mark: | :white_check_mark: | Production |
 | Rancher Monitoring | [pushprox] | `rke_kubereader_t` | :white_check_mark: | :white_check_mark: | :white_check_mark: | :white_check_mark: | Production |
 | Rancher Logging | [fluentbit] | `rke_logreader_t` | :white_check_mark: | :white_check_mark: | :white_check_mark: | :white_check_mark: | Production |
-| Rancher AI | [rancher-ai-agent] | `rancher_aiagent_container_t` | :white_check_mark: | :white_check_mark: | :white_check_mark: | :construction: | Production |
-| Rancher AI | [rancher-ai-mcp] | `rancher_aimcp_container_t` | :white_check_mark: | :white_check_mark: | :white_check_mark: | :construction: | Production |
+| Rancher AI | [rancher-ai-agent] | `rancher_aiagent_container_t` | :white_check_mark: | :white_check_mark: | :white_check_mark: | :white_check_mark: | Production |
+| Rancher AI | [rancher-ai-mcp] | `rancher_aimcp_container_t` | :white_check_mark: | :white_check_mark: | :white_check_mark: | :white_check_mark: | Production |
 | RKE1 | [flannel] | `rke_network_t` | :white_check_mark: | :white_check_mark: | :white_check_mark: | :white_check_mark: | Production |
 | RKE1 | [rke] `etcd`, `kube-apiserver`, etc. | `rke_container_t` | :white_check_mark: | :white_check_mark: | :white_check_mark: | :white_check_mark: | Production |
 

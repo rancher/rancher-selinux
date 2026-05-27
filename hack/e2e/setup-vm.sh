@@ -18,15 +18,20 @@ function isSUSE(){
 
 function verifyPolicyPresence() {
     local pkgs=("rancher-selinux" "rke2-selinux")
-    local types=("prom_node_exporter_t" "rke2_service_t")
+    local types=(
+        "prom_node_exporter_t"
+        "rke2_service_t"
+        "rancher_aiagent_container_t"
+        "rancher_aimcp_container_t"
+    )
 
-    for i in "${!pkgs[@]}"; do
-        local p="${pkgs[$i]}"
-        local t="${types[$i]}"
-        local m="${p%-selinux}"
-
+    for p in "${pkgs[@]}"; do
         rpm -q "$p" >/dev/null 2>&1 || { echo "ERROR: RPM $p not installed"; return 1; }
+        local m="${p%-selinux}"
         semodule -l | grep -w "$m" || { echo "ERROR: Module $m not loaded"; return 1; }
+    done
+
+    for t in "${types[@]}"; do
         seinfo -t "$t" >/dev/null 2>&1 || { echo "ERROR: Type $t unknown"; return 1; }
     done
 
@@ -58,8 +63,8 @@ function enforceSELinux(){
 }
 
 function installDependencies(){
-    echo 'echo "export PATH=$PATH:/usr/local/bin"' >> ~/.bashrc
-    echo 'echo "export TERM=xterm"' >> ~/.bashrc
+    echo 'export PATH=$PATH:/usr/local/bin' >> ~/.bashrc
+    echo 'export TERM=xterm' >> ~/.bashrc
 
     if isSUSE; then
         sudo zypper -n install jq git setools-console
@@ -138,36 +143,68 @@ function installRancher(){
     kubectl wait --for=condition=ready -n cattle-system pod -l app=rancher-webhook --timeout=240s
 }
 
-# Example: installRancherChart "rancher-monitoring" "cattle-monitoring-system" "rancher-monitoring-prometheus-node-exporter" "app.kubernetes.io/name=prometheus-node-exporter" "--set ...".
+# installRancherChart installs a Rancher chart and waits for its workloads to be ready.
+#
+# Positional arguments:
+#   $1  CHART_NAME         Helm release name (also used as the CRD sibling chart name for HTTP repos).
+#   $2  NAMESPACE          Target namespace.
+#   $3  WORKLOAD_KIND      "daemonset" or "deployment".
+#   $4  WORKLOAD_NAMES     Comma-separated list of workload names owned by this chart.
+#   $5  POD_LABEL_SELECTOR Label selector used to wait for pod readiness (e.g. "app=foo").
+#                          For charts that own multiple workloads with different labels, pass a
+#                          comma-separated list (e.g. "app=foo,app=bar"); each is waited on
+#                          independently.
+#   $6  CHART_REF          Helm chart reference, e.g. "rancher-charts/foo" (HTTP repo) or
+#                          "oci://host/path/chart" (OCI registry).
+#   $7+ EXTRA_HELM_ARGS    Additional arguments forwarded to `helm upgrade --install`.
+#                          MUST include the chart's SELinux flag — the values key differs per chart
+#                          (`--set global.seLinux.enabled=true` for rancher-monitoring/logging,
+#                          `--set seLinux.enabled=true` for rancher-ai-agent).
+#                          For OCI charts pulled without a pinned `--version`, include `--devel`
+#                          so Helm resolves to the latest available chart including pre-releases.
+#
+# CRD sibling charts are installed only for the HTTP `rancher-charts/` source.
 function installRancherChart() {
     local CHART_NAME="$1"
     local NAMESPACE="$2"
-    local DAEMONSET_NAME="$3"
-    local POD_LABEL_SELECTOR="$4"
-    local EXTRA_HELM_ARGS="${@:5}" # Collect any additional arguments.
+    local WORKLOAD_KIND="$3"
+    local WORKLOAD_NAMES="$4"
+    local POD_LABEL_SELECTOR="$5"
+    local CHART_REF="$6"
+    local EXTRA_HELM_ARGS="${@:7}"
 
-    # Add Rancher charts repository.
-    helm repo add rancher-charts https://charts.rancher.io/
+    # Add the HTTP rancher-charts repo (and install a CRD sibling) only when this chart is sourced
+    # from it. OCI charts (e.g. rancher-ai-agent) have no -crd sibling chart.
+    if [[ "${CHART_REF}" == rancher-charts/* ]]; then
+        helm repo add rancher-charts https://charts.rancher.io/ >/dev/null 2>&1 || true
 
-    echo "> Installing CRD chart ${CHART_NAME}-crd in namespace ${NAMESPACE}"
+        echo "> Installing CRD chart ${CHART_NAME}-crd in namespace ${NAMESPACE}"
+        helm upgrade --install=true \
+            --labels=catalog.cattle.io/cluster-repo-name=rancher-charts \
+            --namespace="${NAMESPACE}" --timeout=20m0s --wait=true \
+            --create-namespace \
+            "${CHART_NAME}-crd" "rancher-charts/${CHART_NAME}-crd"
+    fi
+
+    echo "> Installing main chart ${CHART_NAME} (${CHART_REF})"
     helm upgrade --install=true \
         --labels=catalog.cattle.io/cluster-repo-name=rancher-charts \
         --namespace="${NAMESPACE}" --timeout=20m0s --wait=true \
         --create-namespace \
-        "${CHART_NAME}-crd" "rancher-charts/${CHART_NAME}-crd"
-
-    echo "> Installing main chart ${CHART_NAME} with SELinux enabled"
-    helm upgrade --install=true \
-        --labels=catalog.cattle.io/cluster-repo-name=rancher-charts \
-        --namespace="${NAMESPACE}" --timeout=20m0s --wait=true \
-        --create-namespace \
-        "${CHART_NAME}" "rancher-charts/${CHART_NAME}" \
-        --set global.seLinux.enabled=true \
+        "${CHART_NAME}" "${CHART_REF}" \
         ${EXTRA_HELM_ARGS}
 
-    # Wait for DaemonSet creation and Pod readiness.
-    kubectl wait --for=create -n "${NAMESPACE}" daemonset/"${DAEMONSET_NAME}" --timeout=240s
-    kubectl wait --for=condition=ready -n "${NAMESPACE}" pod -l "${POD_LABEL_SELECTOR}" --timeout=240s
+    # Wait for every workload (DaemonSet or Deployment) the chart owns to be created.
+    local IFS_BAK="$IFS"; IFS=','
+    for w in ${WORKLOAD_NAMES}; do
+        kubectl wait --for=create -n "${NAMESPACE}" "${WORKLOAD_KIND}/${w}" --timeout=240s
+    done
+    # Wait for pod readiness for each provided label selector (supports multi-workload charts
+    # whose workloads don't share a single selector).
+    for sel in ${POD_LABEL_SELECTOR}; do
+        kubectl wait --for=condition=ready -n "${NAMESPACE}" pod -l "${sel}" --timeout=300s
+    done
+    IFS="$IFS_BAK"
 }
 
 function uninstallRancherChart() {
@@ -176,9 +213,13 @@ function uninstallRancherChart() {
 
     echo "> Uninstalling main chart ${CHART_NAME} from namespace ${NAMESPACE}"
     helm uninstall "${CHART_NAME}" -n "${NAMESPACE}" --wait
-    
-    echo "> Uninstalling CRD chart ${CHART_NAME}-crd"
-    helm uninstall "${CHART_NAME}-crd" -n "${NAMESPACE}" --wait
+
+    # Best-effort CRD chart removal (only present when a -crd sibling was installed).
+    if helm status "${CHART_NAME}-crd" -n "${NAMESPACE}" >/dev/null 2>&1; then
+        echo "> Uninstalling CRD chart ${CHART_NAME}-crd"
+        helm uninstall "${CHART_NAME}-crd" -n "${NAMESPACE}" --wait
+    fi
+
     echo "> Deleting namespace ${NAMESPACE}"
     kubectl delete ns "${NAMESPACE}" --timeout=120s
 
@@ -189,10 +230,10 @@ function uninstallRancherChart() {
 
 # Example: e2eSELinuxVerification "fluentbit" "fluent-bit" "cattle-logging-system" "rke_logreader_t".
 function e2eSELinuxVerification(){
-    local CONTAINER_NAME="$1"
+    local POD_NAME_PREFIX="$1"
     local CONTAINER_RUNNING_NAME="$2"
     local POD_NAMESPACE="$3"
-    local POD_NAME=$(kubectl get pods -n ${POD_NAMESPACE} -o custom-columns=NAME:.metadata.name | grep "${CONTAINER_NAME}")
+    local POD_NAME=$(kubectl get pods -n ${POD_NAMESPACE} -o custom-columns=NAME:.metadata.name | grep "${POD_NAME_PREFIX}" | head -n1)
     local CONTAINER_EXPECTED_SLTYPE="$4"
     local CONTAINER_RUNNING_SLTYPE=""
 
@@ -203,8 +244,9 @@ function e2eSELinuxVerification(){
         echo "SELinux type is not present: ${CONTAINER_EXPECTED_SLTYPE}"
     fi
 
-    echo "> Verify expected SELinux context type ${CONTAINER_EXPECTED_SLTYPE} for container ${CONTAINER_NAME}"
-    CONTAINER_RUNNING_SLTYPE=$(kubectl get pod ${POD_NAME} -n ${POD_NAMESPACE} -o json | jq -r ".spec.containers[] | select(.name==\"${CONTAINER_RUNNING_NAME}\") | .securityContext.seLinuxOptions.type")
+    echo "> Verify expected SELinux context type ${CONTAINER_EXPECTED_SLTYPE} for container ${CONTAINER_RUNNING_NAME} in pod ${POD_NAME}"
+    # Get SELinux type from Pod-level securityContext, falling back to Container-level if empty
+    CONTAINER_RUNNING_SLTYPE=$(kubectl get pod ${POD_NAME} -n ${POD_NAMESPACE} -o json | jq -r ".spec.securityContext.seLinuxOptions.type // (.spec.containers[] | select(.name==\"${CONTAINER_RUNNING_NAME}\") | .securityContext.seLinuxOptions.type)")
     if [[ "${CONTAINER_RUNNING_SLTYPE}" == "${CONTAINER_EXPECTED_SLTYPE}" ]]; then
         echo "SELinux type is correct: ${CONTAINER_RUNNING_SLTYPE}"
     else
@@ -230,32 +272,50 @@ function main(){
     installRancher
 
     # Note: Append this list with new components to install and test the rancher-selinux policy.
-    # Value: A space-separated list of arguments: Namespace DaemonSet PodLabel ContainerName ContainerRunningName SELinuxType ExtraHelmArgs.
+    #
+    # Per-component layout (space-separated):
+    #   NAMESPACE WORKLOAD_KIND WORKLOAD_NAMES POD_LABELS VERIFY_TRIPLETS CHART_REF EXTRA_HELM_ARGS
+    #
+    # - WORKLOAD_KIND:   daemonset|deployment
+    # - WORKLOAD_NAMES:  comma-separated list of workload names owned by the chart.
+    # - POD_LABELS:      comma-separated list of label selectors used for readiness waits
+    #                    (one entry per workload group that doesn't share a common selector).
+    # - VERIFY_TRIPLETS: ';'-separated list of 'podNamePrefix:containerName:expected_selinux_type'
+    # - CHART_REF:       "rancher-charts/<name>" (HTTP repo) or "oci://host/path/chart" (OCI registry)
+    # - EXTRA_HELM_ARGS: forwarded verbatim to `helm upgrade --install`. MUST include the chart's
+    #                    SELinux flag (e.g. `--set global.seLinux.enabled=true` or
+    #                    `--set seLinux.enabled=true`). For OCI charts without a pinned version,
+    #                    include `--devel` so Helm resolves to the latest pre-release.
     declare -A COMPONENTS=(
-        [rancher-monitoring]="cattle-monitoring-system rancher-monitoring-prometheus-node-exporter app.kubernetes.io/name=prometheus-node-exporter node-exporter node-exporter prom_node_exporter_t --set prometheus-node-exporter.seLinuxOptions.type=prom_node_exporter_t"
-        [rancher-logging]="cattle-logging-system rancher-logging-root-fluentbit app.kubernetes.io/name=fluentbit fluentbit fluent-bit rke_logreader_t"
+        [rancher-monitoring]="cattle-monitoring-system daemonset rancher-monitoring-prometheus-node-exporter app.kubernetes.io/name=prometheus-node-exporter node-exporter:node-exporter:prom_node_exporter_t rancher-charts/rancher-monitoring --set global.seLinux.enabled=true --set prometheus-node-exporter.hostRootFsMount.enabled=false"
+        [rancher-logging]="cattle-logging-system daemonset rancher-logging-root-fluentbit app.kubernetes.io/name=fluentbit fluentbit:fluent-bit:rke_logreader_t rancher-charts/rancher-logging --set global.seLinux.enabled=true"
+        [rancher-ai-agent]="cattle-ai-agent-system deployment rancher-ai-agent,rancher-mcp-server app=rancher-ai-agent,app=rancher-mcp-server rancher-ai-agent:agent:rancher_aiagent_container_t;rancher-mcp-server:mcp-server:rancher_aimcp_container_t oci://stgregistry.suse.com/rancher/charts/rancher-ai-agent --set seLinux.enabled=true --set insecureSkipTls=true"
     )
 
     for CHART_NAME in "${!COMPONENTS[@]}"; do
         # Read the space-separated values into individual variables.
-        read -r NAMESPACE DAEMONSET_NAME POD_LABEL CONTAINER_NAME CONTAINER_RUNNING_NAME SELINUX_TYPE EXTRA_HELM_ARGS <<< "${COMPONENTS[${CHART_NAME}]}"
+        read -r NAMESPACE WORKLOAD_KIND WORKLOAD_NAMES POD_LABELS VERIFY_TRIPLETS CHART_REF EXTRA_HELM_ARGS <<< "${COMPONENTS[${CHART_NAME}]}"
 
-        echo "> Installing and testing Chart: ${CHART_NAME} in Namespace: ${NAMESPACE} with SELinux type ${SELINUX_TYPE}"
+        echo "> Installing and testing Chart: ${CHART_NAME} in Namespace: ${NAMESPACE}"
 
-        # 1. Install the chart (passing the collected variables).
+        # 1. Install the chart.
         installRancherChart \
             "${CHART_NAME}" \
             "${NAMESPACE}" \
-            "${DAEMONSET_NAME}" \
-            "${POD_LABEL}" \
+            "${WORKLOAD_KIND}" \
+            "${WORKLOAD_NAMES}" \
+            "${POD_LABELS}" \
+            "${CHART_REF}" \
             "${EXTRA_HELM_ARGS}"
 
-        # 2. Run E2E SELinux Verification.
-        e2eSELinuxVerification \
-            "${CONTAINER_NAME}" \
-            "${CONTAINER_RUNNING_NAME}" \
-            "${NAMESPACE}" \
-            "${SELINUX_TYPE}"
+        # 2. Run E2E SELinux verification for every (podPrefix,container,type) triplet.
+        IFS_BAK="$IFS"; IFS=';'
+        for triplet in ${VERIFY_TRIPLETS}; do
+            IFS=':' read -r POD_PREFIX C_NAME C_TYPE <<< "${triplet}"
+            echo "> Verifying pod ${POD_PREFIX} / container ${C_NAME} against SELinux type ${C_TYPE}"
+            e2eSELinuxVerification "${POD_PREFIX}" "${C_NAME}" "${NAMESPACE}" "${C_TYPE}"
+        done
+        IFS="$IFS_BAK"
 
         # 3. Uninstall the chart (free some resources).
         uninstallRancherChart \
