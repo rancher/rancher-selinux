@@ -289,7 +289,7 @@ function main(){
     declare -A COMPONENTS=(
         [rancher-monitoring]="cattle-monitoring-system daemonset rancher-monitoring-prometheus-node-exporter app.kubernetes.io/name=prometheus-node-exporter node-exporter:node-exporter:prom_node_exporter_t rancher-charts/rancher-monitoring --set global.seLinux.enabled=true --set prometheus-node-exporter.hostRootFsMount.enabled=false"
         [rancher-logging]="cattle-logging-system daemonset rancher-logging-root-fluentbit app.kubernetes.io/name=fluentbit fluentbit:fluent-bit:rke_logreader_t rancher-charts/rancher-logging --set global.seLinux.enabled=true"
-        [rancher-ai-agent]="cattle-ai-agent-system deployment rancher-ai-agent,rancher-mcp-server app=rancher-ai-agent,app=rancher-mcp-server rancher-ai-agent:agent:rancher_aiagent_container_t;rancher-mcp-server:mcp-server:rancher_aimcp_container_t oci://stgregistry.suse.com/rancher/charts/rancher-ai-agent --set seLinux.enabled=true --set insecureSkipTls=true"
+        [rancher-ai-agent]="cattle-ai-agent-system deployment rancher-ai-agent,rancher-mcp-server app=rancher-ai-agent,app=rancher-mcp-server rancher-ai-agent:agent:rancher_aiagent_container_t;rancher-mcp-server:mcp-server:rancher_aimcp_container_t oci://stgregistry.suse.com/rancher/charts/rancher-ai-agent --devel --set seLinux.enabled=true --set insecureSkipTls=true"
     )
 
     for CHART_NAME in "${!COMPONENTS[@]}"; do
