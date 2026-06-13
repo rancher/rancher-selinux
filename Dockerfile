@@ -14,7 +14,7 @@ RUN yum install -y \
         rpm-build \
         rpm-sign
 
-FROM quay.io/rockylinux/rockylinux:10@sha256:f4da504c18e7aced902f4f728cde787cd9d9b817bc639fe171026d18364dca6c AS centos10
+FROM quay.io/rockylinux/rockylinux:10@sha256:827d37bc128288ccf160ee318bb3cb92d591164cb217e92f8bc61e3982ae1834 AS centos10
 RUN yum install -y \
         createrepo_c \
         epel-release \
