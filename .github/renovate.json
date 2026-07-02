@@ -11,6 +11,11 @@
       "matchPackageNames": ["fedora"],
       "matchDatasources": ["docker"],
       "allowedVersions": "<42.0.0"
+    },
+    {
+      "matchManagers": ["github-actions"],
+      "groupName": "GitHub Actions",
+      "groupSlug": "github-actions"
     }
   ]
 }
