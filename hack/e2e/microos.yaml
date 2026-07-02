@@ -1,12 +1,11 @@
-minimumLimaVersion: 2.0.0
-
 images:
-# Hint: run `limactl prune` to invalidate the "Current" cache
 - location: https://download.opensuse.org/tumbleweed/appliances/openSUSE-Tumbleweed-Minimal-VM.x86_64-Cloud.qcow2
   arch: x86_64
+  digest: "sha256:d3ac5ff6d178bfd3aee8cf31deb4c13c66c01e10583d601e6dd3c9968ec04266"
 
 - location: https://download.opensuse.org/ports/aarch64/tumbleweed/appliances/openSUSE-Tumbleweed-Minimal-VM.aarch64-Cloud.qcow2
   arch: aarch64
+  digest: "sha256:c030b6e9a319dce6720da3f7910eb2da5a10b816236396077ca44e986af1308b"
 
 provision:
 - mode: system
