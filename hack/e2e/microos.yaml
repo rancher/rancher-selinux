@@ -1,7 +1,7 @@
 images:
 - location: https://download.opensuse.org/tumbleweed/appliances/openSUSE-Tumbleweed-Minimal-VM.x86_64-Cloud.qcow2
   arch: x86_64
-  digest: "sha256:d3ac5ff6d178bfd3aee8cf31deb4c13c66c01e10583d601e6dd3c9968ec04266"
+  digest: "sha256:2b6ce9e2546bdbe7afe46d83bcc21a9720a59ea97a8b28636a93f9a3b90454cb"
 
 - location: https://download.opensuse.org/ports/aarch64/tumbleweed/appliances/openSUSE-Tumbleweed-Minimal-VM.aarch64-Cloud.qcow2
   arch: aarch64
