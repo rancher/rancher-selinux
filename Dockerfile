@@ -25,7 +25,7 @@ RUN yum install -y \
         rpm-sign \
         gnupg2
 
-FROM fedora:42@sha256:99e203b80b1c3d8f7e161ec10a68fd02b081ef83a3963553e513c82846b97814 AS fedora42
+FROM fedora:43@sha256:a651ddf48ea28a06ed4e1e6519f51c9f47e7a5a138722ade87369b8fbb7e5b42 AS fedora43
 RUN dnf clean all && dnf install -y \
         createrepo_c \
         container-selinux \
