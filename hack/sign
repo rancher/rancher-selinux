@@ -2,13 +2,38 @@
 set -eo pipefail
 
 PASSPHRASE_VAR=""
+PASSPHRASE_FILE=""
+KEY_FILE=""
+RPMS=()
+
+function cleanup(){
+    if [ -n "${PASSPHRASE_FILE}" ]; then
+      rm -f "${PASSPHRASE_FILE}"
+    fi
+    if [ -n "${KEY_FILE}" ]; then
+      rm -f "${KEY_FILE}"
+    fi
+    return 0
+}
+trap cleanup EXIT
+
+# Keep the passphrase out of argv: it would otherwise be visible in
+# /proc/<pid>/cmdline, and rpm would macro-expand any '%' it contains.
+function write_passphrase_file(){
+    [ -n "${PASSPHRASE_FILE}" ] && return 0
+    PASSPHRASE_FILE="$(mktemp)"
+    chmod 600 "${PASSPHRASE_FILE}"
+    printf '%s' "${!PASSPHRASE_VAR}" > "${PASSPHRASE_FILE}"
+}
 
 function dryrun() {
-  	export SIGN_KEY_EMAIL="disposable-ci-test-key"
-		export TESTING_PRIVATE_KEY_PASS_PHRASE=$(cat /dev/urandom | tr -dc A-Za-z0-9 | head -c20)
+    export SIGN_KEY_EMAIL="disposable-ci-test-key"
+    export TESTING_PRIVATE_KEY_PASS_PHRASE=$(tr -dc A-Za-z0-9 < /dev/urandom | head -c20)
     export PASSPHRASE_VAR=TESTING_PRIVATE_KEY_PASS_PHRASE
-		
-    gpg --quiet --no-tty --pinentry-mode loopback --passphrase "${TESTING_PRIVATE_KEY_PASS_PHRASE}" \
+
+    write_passphrase_file
+
+    gpg --quiet --no-tty --pinentry-mode loopback --passphrase-file "${PASSPHRASE_FILE}" \
       --quick-gen-key --yes "${SIGN_KEY_EMAIL}" rsa2048
 
     sign_rpms
@@ -46,36 +71,96 @@ function check_channel(){
         ;;
     esac
 
+    if [ -z "${!PASSPHRASE_VAR}" ]; then
+      echo "${PASSPHRASE_VAR} not defined, failing rpm sign"
+      exit 1
+    fi
+
     if ! grep "BEGIN PGP PRIVATE KEY BLOCK" <<<"${!KEY_VAR}" > /dev/null; then
       echo "${KEY_VAR} not defined, failing rpm sign"
       exit 1
     fi
+
+    write_passphrase_file
+
     echo "Importing GPG private key ${KEY_VAR}"
-    gpg --yes --pinentry-mode loopback --batch --passphrase "${!PASSPHRASE_VAR}" --import - <<< "${!KEY_VAR}"
+    printf '%s' "${!KEY_VAR}" | gpg --yes --pinentry-mode loopback --batch \
+      --passphrase-file "${PASSPHRASE_FILE}" --import -
     echo "Signing keys imported successfully"
 }
 
-function sign_rpms(){
-    gpg --armor --export --output "${SIGN_KEY_EMAIL}" "${SIGN_KEY_EMAIL}"
-    rpm --import "${SIGN_KEY_EMAIL}"
+# find + NUL delimiters: recurses to any depth and is safe against whitespace
+# or shell metacharacters in paths.
+function collect_rpms(){
+    RPMS=()
+    while IFS= read -r -d '' rpm_path; do
+      RPMS+=("${rpm_path}")
+    done < <(find /dist -type f -name 'rancher-*.rpm' -print0)
 
-    echo "Signing RPMs with ${SIGN_KEY_EMAIL} GPG KEY"
-    rpmsign --addsign /dist/**/rancher-*.rpm \
-            --define "_gpg_name ${SIGN_KEY_EMAIL}" \
+    if [ ${#RPMS[@]} -eq 0 ]; then
+      echo "no RPMs found under /dist, failing rpm sign"
+      exit 1
+    fi
+
+    echo "found ${#RPMS[@]} RPM(s) under /dist"
+}
+
+# rpm >= 6 execs %__gpg_sign_cmd directly and passes the plaintext/signature
+# paths positionally as %{1}/%{2}.
+function uses_rpm6_sign_contract(){
+    [ -n "$(rpm --eval '%{?_openpgp_sign}')" ]
+}
+
+function sign_rpms_legacy(){
+    echo "Signing RPMs with ${SIGN_KEY_EMAIL} GPG KEY (rpm 4 __gpg_sign_cmd)"
+    rpmsign --define "_gpg_name ${SIGN_KEY_EMAIL}" \
             --define "_gpgbin /usr/bin/gpg" \
             --define "__gpg_sign_cmd %{__gpg} gpg \
                       --batch \
                       --no-armor \
                       --pinentry-mode loopback \
-                      --passphrase ${!PASSPHRASE_VAR} \
+                      --passphrase-file ${PASSPHRASE_FILE} \
                       -u %{_gpg_name} \
                       -sbo %{__signature_filename} \
-                      --digest-algo sha256 %{__plaintext_filename}"
+                      --digest-algo sha256 %{__plaintext_filename}" \
+            --addsign "${RPMS[@]}"
+}
+
+function sign_rpms_rpm6(){
+    echo "Signing RPMs with ${SIGN_KEY_EMAIL} GPG KEY (rpm 6 __gpg_sign_cmd)"
+    # The "()" makes the macro parametric so %{1}/%{2} are bound to the file paths.
+    rpmsign --define "_gpg_name ${SIGN_KEY_EMAIL}" \
+            --define "__gpg_sign_cmd() %{__gpg} \
+                      --no-verbose \
+                      --no-armor \
+                      --no-secmem-warning \
+                      --batch \
+                      --pinentry-mode loopback \
+                      --passphrase-file ${PASSPHRASE_FILE} \
+                      --digest-algo sha256 \
+                      -u '%{_gpg_name}' \
+                      -sbo '%{2}' -- '%{1}'" \
+            --addsign "${RPMS[@]}"
+}
+
+function sign_rpms(){
+    collect_rpms
+    write_passphrase_file
+
+    KEY_FILE="$(mktemp)"
+    gpg --armor --export --output "${KEY_FILE}" --yes "${SIGN_KEY_EMAIL}"
+    rpm --import "${KEY_FILE}"
+
+    if uses_rpm6_sign_contract; then
+      sign_rpms_rpm6
+    else
+      sign_rpms_legacy
+    fi
 }
 
 function verify_signatures(){
     echo "Verifying RPMs signatures"
-    rpm --checksig --verbose /dist/**/rancher-*.rpm
+    rpm --checksig --verbose "${RPMS[@]}"
 }
 
 function main (){
