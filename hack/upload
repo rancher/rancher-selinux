@@ -61,6 +61,9 @@ function upload_artefacts()
       "fedora43")
         S3_POLICY_DIR="fedora/43"
         ;;
+      "leap16")
+        S3_POLICY_DIR="leap/16"
+        ;;
       "microos")
         S3_POLICY_DIR="microos"
         ;;
