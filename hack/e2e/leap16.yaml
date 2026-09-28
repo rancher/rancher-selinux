@@ -1,0 +1,18 @@
+images:
+# Hint: run `limactl prune` to invalidate the Current cache
+
+- location: https://download.opensuse.org/distribution/leap/16.0/appliances/Leap-16.0-Minimal-VM.x86_64-Cloud.qcow2
+  arch: x86_64
+  digest: "sha256:cb7b34dc75f8168d232a6d4fcdd585667bf76e5ce6f76340888cb8ffb16f389d"
+
+- location: https://download.opensuse.org/distribution/leap/16.0/appliances/Leap-16.0-Minimal-VM.aarch64-Cloud.qcow2
+  arch: aarch64
+  digest: "sha256:f4b7be3af69a3a6307ce7c8741db54f6bb2aa4133240a79d945c9b9883594096"
+
+provision:
+- mode: system
+  script: |
+    zypper --gpg-auto-import-keys ref
+    # install openssl for helm setup (error: please install openssl or set VERIFY_CHECKSUM=false in your environment.Failed to install helm)
+    # install iptables for rke2-ingress-nginx-controller-8zlzd (error: executable file not found in $PATH)
+    zypper --non-interactive install -y openssl iptables

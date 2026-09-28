@@ -39,27 +39,48 @@ function verifyPolicyPresence() {
     return 0
 }
 
+function getSuseRepoPath() {
+    if grep -qi "microos" /etc/os-release; then
+        echo "microos"
+    else
+        echo "slemicro"
+    fi
+}
+
 function enforceSELinux(){
     echo "> Check SELinux status"
-    # Short circuit if SELinux is not being enforced.
     getenforce | grep -q Enforcing
-    # Remove dontaudits from policy for debugging.
-    sudo semodule -DB
+
     if isSUSE; then
-        # Install container-selinux rke2-selinux
-        sudo zypper -n install container-selinux
-        # Install rancher-selinux policy.
+        local SUSE_REPO_PATH
+        SUSE_REPO_PATH=$(getSuseRepoPath)
+
+        echo "> Configuring Rancher Common RPM repository for target: ${SUSE_REPO_PATH}"
+        cat << EOF | sudo tee /etc/zypp/repos.d/rancher-rke2-common-latest.repo
+[rancher-rke2-common-latest]
+name=Rancher RKE2 Common Latest
+baseurl=https://rpm.rancher.io/rke2/latest/common/${SUSE_REPO_PATH}/noarch
+enabled=1
+gpgcheck=1
+repo_gpgcheck=1
+gpgkey=https://rpm.rancher.io/public.key
+EOF
+
+        sudo zypper --gpg-auto-import-keys refresh
+        # 1. Install container-selinux first and commit its types
+        sudo zypper -n --gpg-auto-import-keys install container-selinux
+        sudo semodule -B
+        # 2. Install rke2-selinux in a separate transaction
+        sudo zypper -n --gpg-auto-import-keys install rke2-selinux
+        # 3. Install rancher-selinux policy
         sudo zypper -n install --allow-unsigned-rpm /tmp/rancher-selinux.rpm
     else
-        # Install extra kernel modules needed for networking/conntrack (EL10 requirement).
-        # See: https://docs.rke2.io/install/requirements#linux
-        # We target $(uname -r) to ensure modules match the running kernel and avoid a reboot.
         sudo dnf install "kernel-modules-extra-$(uname -r)" -y
-        # Install container-selinux and selinux-policy latest versions.
         sudo dnf install -y container-selinux selinux-policy --best --allowerasing
-        # Install rancher-selinux policy.
         sudo dnf install -y /tmp/rancher-selinux.rpm
     fi
+    # Rebuild policy store and remove dontaudits for debugging
+    sudo semodule -DB
 }
 
 function installDependencies(){
@@ -102,10 +123,6 @@ function installRKE2(){
     curl -sfL https://get.rke2.io -o install.sh
     INSTALL_RKE2_VERSION="${INSTALL_RKE2_VERSION}" sh install.sh
     rm -f install.sh
-    # RKE2 install script does not install the SELinux policy by default for tumbleweed; manual setup required.
-    if isSUSE; then
-        sudo zypper -n install rke2-selinux
-    fi
     systemctl enable --now rke2-server.service
 
     export KUBECONFIG=/etc/rancher/rke2/rke2.yaml
