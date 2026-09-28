@@ -9,7 +9,7 @@ restorecon -R /var/lib/rancher /etc/kubernetes /opt/rke;
 
 Name:   rancher-selinux
 Version:	%{rancher_selinux_version}
-Release:	%{rancher_selinux_release}.sle
+Release:	%{rancher_selinux_release}.microos
 Summary:	SELinux policy module for Rancher
 Vendor:     SUSE LLC
 Packager:   SUSE LLC <https://www.suse.com/>
