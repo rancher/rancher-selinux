@@ -1,4 +1,6 @@
-# About rancher-selinux [![OpenSSF Scorecard](https://api.scorecard.dev/projects/github.com/rancher/rancher-selinux/badge)](https://scorecard.dev/viewer/?uri=github.com/rancher/rancher-selinux)
+# rancher-selinux 
+
+[![OpenSSF Scorecard](https://api.scorecard.dev/projects/github.com/rancher/rancher-selinux/badge)](https://scorecard.dev/viewer/?uri=github.com/rancher/rancher-selinux)
 
 `rancher-selinux` contains a set of SELinux policies designed to grant the necessary privileges to various Rancher components running on Linux systems with SELinux enabled. These policies enhance security by defining dedicated types for containers and assigning them the least privileges possible.
 
@@ -22,13 +24,13 @@ The following Rancher components are covered by the policy:
 
 ## Support Matrix
 
-| Operating System      | Version | Supported          | Policy     | E2E                   |
-| :-------------------- | :------ | :----------------- | :--------- | :-------------------- |
-| openSUSE Leap/SLE     | 16      | :white_check_mark: | [leap16]  | :white_check_mark:    |
-| openSUSE MicroOS/TW   | Rolling | :white_check_mark: | [microos]  | :white_check_mark:    |
-| RHEL/CentOS/Rocky     | 9       | :white_check_mark: | [centos9]  | :white_check_mark:    |
-| RHEL/CentOS/Rocky     | 10      | :white_check_mark: | [centos10] | :white_check_mark:    |
-| Fedora                | 43      | :white_check_mark: | [fedora43] | :white_check_mark:    |
+| Operating System            | Version | Extension  | Supported          | Policy     | E2E                   |
+| :-------------------------- | :------ | :--------- | :----------------- | :--------- | :-------------------- |
+| openSUSE Leap / SLE / SLE Micro | 16 / 6  | `.sle`     | :white_check_mark: | [leap16]   | :white_check_mark:    |
+| openSUSE MicroOS / TW       | Rolling | `.microos` | :white_check_mark: | [microos]  | :white_check_mark:    |
+| RHEL / CentOS / Rocky       | 9       | `.el9`     | :white_check_mark: | [centos9]  | :white_check_mark:    |
+| RHEL / CentOS / Rocky       | 10      | `.el10`    | :white_check_mark: | [centos10] | :white_check_mark:    |
+| Fedora                      | 43      | `.fc43`    | :white_check_mark: | [fedora43] | :white_check_mark:    |
 
 ## Versioning/Tagging
 
@@ -59,7 +61,7 @@ The following list shows the expected tag to (example) transformation for RPM's
 [centos10]: https://github.com/rancher/rancher-selinux/tree/main/policy/centos10
 [fedora43]: https://github.com/rancher/rancher-selinux/tree/main/policy/fedora43
 [microos]: https://github.com/rancher/rancher-selinux/tree/main/policy/microos
-[leap6]: https://github.com/rancher/rancher-selinux/tree/main/policy/leap16
+[leap16]: https://github.com/rancher/rancher-selinux/tree/main/policy/leap16
 [fluentbit]: https://github.com/rancher/charts/blob/262597a41a175cfb4785d70fd76b33d56f8c1f95/charts/rancher-logging/106.0.1%2Bup4.10.0-rancher.4/templates/loggings/k3s/daemonset.yaml#L22
 [node-exporter]: https://github.com/rancher/charts/blob/262597a41a175cfb4785d70fd76b33d56f8c1f95/charts/rancher-monitoring/106.0.1%2Bup66.7.1-rancher.10/charts/prometheus-node-exporter/templates/daemonset.yaml#L51
 [flannel]: https://github.com/rancher/kontainer-driver-metadata/blob/34e1e8a7a157daae54b310b199aa663c9a2ef314/rke/templates/flannel_v0.14.0.go#L239
