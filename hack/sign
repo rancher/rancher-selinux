@@ -38,6 +38,7 @@ function dryrun() {
 
     sign_rpms
     verify_signatures
+    sign_metadata
 }
 
 function check_vars()
@@ -163,11 +164,26 @@ function verify_signatures(){
     rpm --checksig --verbose "${RPMS[@]}"
 }
 
+# repomd.xml references the RPM checksums, so metadata must be regenerated
+# after the RPMs are signed and only then signed itself.
+function sign_metadata(){
+    ./metadata
+
+    while IFS= read -r -d '' repomd; do
+      echo "Signing ${repomd}"
+      gpg --batch --yes --pinentry-mode loopback --passphrase-file "${PASSPHRASE_FILE}" \
+        -u "${SIGN_KEY_EMAIL}" --detach-sign --armor --output "${repomd}.asc" "${repomd}"
+      gpg --verify "${repomd}.asc" "${repomd}"
+      chown "${USER}:${GROUP}" "${repomd}.asc"
+    done < <(find /dist -type f -path '*/repodata/repomd.xml' -print0)
+}
+
 function main (){
   check_vars
   check_channel
   sign_rpms
   verify_signatures
+  sign_metadata
 }
 
 if [[ "$1" == "--dry-run" ]]; then
