@@ -100,7 +100,7 @@ endif
 	@echo VERSION: $(VERSION)
 
 e2e: ## test selinux policy against all distros.
-	$(MAKE) $(addprefix push-tool-, $(DISTROS))
+	$(MAKE) $(addprefix e2e-, $(DISTROS))
 
 e2e-%: ## test selinux policy against a specific distro (eg. make e2e-centos10).
 	make $(subst :,/,$*)-build-image
