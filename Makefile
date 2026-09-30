@@ -37,7 +37,6 @@ build: ## build all policies.
 	$(MAKE) $(subst :,/,$*)-build-image
 	$(MAKE) $(subst :,/,$*)-build-artefacts
 	$(MAKE) $(subst :,/,$*)-build-sign
-	$(MAKE) $(subst :,/,$*)-build-metadata
 
 %-build-image: ## build the container image used to generate a given policy.
 	$(RUNNER) build --build-arg POLICY=$(subst :,/,$*) \

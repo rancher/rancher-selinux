@@ -42,7 +42,7 @@ RUN zypper install -y \
 # libglib is required to install createrepo_c in Tumbleweed.
 RUN zypper install -y libglib-2_0-0 createrepo_c
 
-FROM opensuse/leap:16.0@sha256:1e710a28227dea189500dd49a9ccd2b9f218e059329354abdb1297ee94d2dcd4 AS leap16
+FROM opensuse/leap:16.0@sha256:1e710a28227dea189500dd49a9ccd2b9f218e059329354abdb1297ee94d2dcd4 AS sle
 RUN zypper install -y \
         container-selinux \
         selinux-policy-devel \
