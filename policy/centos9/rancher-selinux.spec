@@ -19,7 +19,7 @@ License:	Apache-2.0
 URL:		http://rancher.com
 Source0:	rancher.pp
 
-Requires: policycoreutils, libselinux-utils
+Requires: policycoreutils, libselinux-utils, container-selinux >= %{container_policyver}
 Requires(post): selinux-policy >= %{selinux_policyver}, policycoreutils, container-selinux >= %{container_policyver}
 Requires(postun): policycoreutils
 

@@ -21,7 +21,7 @@ Source0:	rancher.pp
 
 BuildRequires: container-selinux >= %{container_policyver}
 
-Requires: policycoreutils, libselinux-utils
+Requires: policycoreutils, libselinux-utils, container-selinux >= %{container_policyver}
 Requires(post): selinux-policy >= %{selinux_policyver}, policycoreutils, container-selinux >= %{container_policyver}
 Requires(postun): policycoreutils
 

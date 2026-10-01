@@ -67,18 +67,18 @@ gpgkey=https://rpm.rancher.io/public.key
 EOF
 
         sudo zypper --gpg-auto-import-keys refresh
-        # 1. Install container-selinux first and commit its types
-        sudo zypper -n --gpg-auto-import-keys install container-selinux
-        sudo semodule -B
+        # 1. Install rancher-selinux on its own, as users would: container-selinux is pulled in
+        #    as a dependency in the same transaction, so scriptlet ordering issues are caught.
+        sudo zypper -n --gpg-auto-import-keys install --allow-unsigned-rpm /tmp/rancher-selinux.rpm
         # 2. Install rke2-selinux in a separate transaction
         sudo zypper -n --gpg-auto-import-keys install rke2-selinux
-        # 3. Install rancher-selinux policy
-        sudo zypper -n install --allow-unsigned-rpm /tmp/rancher-selinux.rpm
     else
         sudo dnf install "kernel-modules-extra-$(uname -r)" -y
         sudo dnf install -y container-selinux selinux-policy --best --allowerasing
         sudo dnf install -y /tmp/rancher-selinux.rpm
     fi
+    # The spec scriptlets exit 0 on failure, so check the module was actually loaded.
+    semodule -l | grep -qw rancher || { echo "ERROR: rancher module not loaded after install"; exit 1; }
     # Rebuild policy store and remove dontaudits for debugging
     sudo semodule -DB
 }

@@ -21,7 +21,7 @@ Source0:	rancher.pp
 
 BuildRequires: container-selinux >= %{container_policyver}
 
-Requires: policycoreutils, selinux-tools
+Requires: policycoreutils, selinux-tools, container-selinux >= %{container_policyver}
 Requires(post): selinux-policy >= %{selinux_policyver}, policycoreutils, container-selinux >= %{container_policyver}
 Requires(postun): policycoreutils
 
@@ -35,7 +35,7 @@ install -d %{buildroot}%{_datadir}/selinux/packages
 install -m 644 %{SOURCE0} %{buildroot}%{_datadir}/selinux/packages
 
 
-%post
+%posttrans
 semodule -n -i %{_datadir}/selinux/packages/rancher.pp
 if /usr/sbin/selinuxenabled ; then
     /usr/sbin/load_policy
