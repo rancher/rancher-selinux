@@ -123,6 +123,8 @@ function installRKE2(){
     curl -sfL https://get.rke2.io -o install.sh
     INSTALL_RKE2_VERSION="${INSTALL_RKE2_VERSION}" sh install.sh
     rm -f install.sh
+    # Verify SELinux policies presence before triggering the rest of e2e.
+    verifyPolicyPresence
     systemctl enable --now rke2-server.service
 
     export KUBECONFIG=/etc/rancher/rke2/rke2.yaml
@@ -285,7 +287,6 @@ function main(){
     enforceSELinux
     installDependencies
     installRKE2
-    verifyPolicyPresence
     installRancher
 
     # Note: Append this list with new components to install and test the rancher-selinux policy.
