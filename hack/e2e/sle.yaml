@@ -3,11 +3,11 @@ images:
 
 - location: https://download.opensuse.org/distribution/leap/16.0/appliances/Leap-16.0-Minimal-VM.x86_64-Cloud.qcow2
   arch: x86_64
-  digest: "sha256:8267490632e380890cfea663b5dba5cd828161af3e8cf562a73d6eb04898c4a1"
+  digest: "sha256:2f328a0135f9c8bf62c5ec012405169f76188ea7abf18f9c65cb0ea5374c042b"
 
 - location: https://download.opensuse.org/distribution/leap/16.0/appliances/Leap-16.0-Minimal-VM.aarch64-Cloud.qcow2
   arch: aarch64
-  digest: "sha256:50d4424a9a646fa36e730c41d781f64dde5319c3c85c31934f89004f2fd9f800"
+  digest: "sha256:5147877de1e3ec7d07d9a72bb98101246eeeea0d3b900c8ccb000007a70fc8a4"
 
 provision:
 - mode: system
