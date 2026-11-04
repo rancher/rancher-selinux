@@ -57,11 +57,5 @@ jobs:
           sudo tar Cxzvm /usr/local -f "${LIMA_FILE}"
           sudo tar Cxzvm /usr/local -f "${AGENTS_FILE}"
 
-      - name: Cache ~/.cache/lima
-        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
-        with:
-          path: ~/.cache/lima
-          key: lima-${{ env.LIMA_VERSION }}
-
       - name: E2E ${{ matrix.distro }}
         run: make e2e-${{ matrix.distro }}
