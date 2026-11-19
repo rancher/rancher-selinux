@@ -73,8 +73,8 @@ EOF
         # 2. Install rke2-selinux in a separate transaction
         sudo zypper -n --gpg-auto-import-keys install rke2-selinux
     else
-        sudo dnf install kernel-modules-extra -y
-        sudo dnf install -y container-selinux selinux-policy --best --allowerasing
+        sudo dnf install "kernel-modules-extra-$(uname -r)" -y
+        sudo dnf install -y container-selinux selinux-policy
         sudo dnf install -y /tmp/rancher-selinux.rpm
     fi
     # The spec scriptlets exit 0 on failure, so check the module was actually loaded.
