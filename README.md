@@ -72,8 +72,6 @@ All policies are covered by end-to-end tests in CI.
 | Rancher Logging    | [fluentbit]                          | `rke_logreader_t`             | Production |
 | Rancher AI         | [rancher-ai-agent]                   | `rancher_aiagent_container_t` | Production |
 | Rancher AI         | [rancher-ai-mcp]                     | `rancher_aimcp_container_t`   | Production |
-| RKE1               | [flannel]                            | `rke_network_t`               | EOL        |
-| RKE1               | [rke] `etcd`, `kube-apiserver`, etc. | `rke_container_t`             | EOL        |
 
 > **Note:** Only the components listed above get a dedicated SELinux type. Other Rancher components and workloads use the default `container_t` type from `container-selinux`.
 
@@ -123,8 +121,6 @@ Testing RPMs are published to `https://rpm-testing.rancher.io/rancher/testing/<r
 [sle]: https://github.com/rancher/rancher-selinux/tree/main/policy/sle
 [fluentbit]: https://github.com/rancher/charts/blob/262597a41a175cfb4785d70fd76b33d56f8c1f95/charts/rancher-logging/106.0.1%2Bup4.10.0-rancher.4/templates/loggings/k3s/daemonset.yaml#L22
 [node-exporter]: https://github.com/rancher/charts/blob/262597a41a175cfb4785d70fd76b33d56f8c1f95/charts/rancher-monitoring/106.0.1%2Bup66.7.1-rancher.10/charts/prometheus-node-exporter/templates/daemonset.yaml#L51
-[flannel]: https://github.com/rancher/kontainer-driver-metadata/blob/34e1e8a7a157daae54b310b199aa663c9a2ef314/rke/templates/flannel_v0.14.0.go#L239
 [pushprox]: https://github.com/rancher/charts/tree/dev-v2.11/charts/rancher-monitoring/106.0.1%2Bup66.7.1-rancher.10/charts/rkeEtcd
-[rke]: https://github.com/rancher/rke/blob/5756a3837a3c49d61f1ea2120b02149c21e4a443/hosts/hosts.go#L55
 [rancher-ai-agent]: https://github.com/rancher/rancher-ai-agent
 [rancher-ai-mcp]: https://github.com/rancher/rancher-ai-mcp

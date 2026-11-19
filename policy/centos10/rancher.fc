@@ -1,2 +1,0 @@
-/var/lib/rancher/rke(/.*)?                                              gen_context(system_u:object_r:container_var_lib_t,s0)
-/opt/rke(/.*)?                                                          gen_context(system_u:object_r:rke_opt_t,s0)
