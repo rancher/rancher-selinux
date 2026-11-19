@@ -25,7 +25,7 @@ RUN yum install -y \
         rpm-sign \
         gnupg2
 
-FROM fedora:43@sha256:a651ddf48ea28a06ed4e1e6519f51c9f47e7a5a138722ade87369b8fbb7e5b42 AS fedora43
+FROM fedora:43@sha256:f01112b9a1f1d0504ad962d9adfa401425033f8ab067e0a821904ebdde5b8ca5 AS fedora43
 RUN dnf clean all && dnf install -y \
         createrepo_c \
         container-selinux \
@@ -33,7 +33,7 @@ RUN dnf clean all && dnf install -y \
         rpm-build \
         rpm-sign
 
-FROM opensuse/tumbleweed@sha256:33858e17c7424966766c570cc74dea17e9a1b85bfb5c86681d8748d2f7d435f5 AS microos
+FROM opensuse/tumbleweed@sha256:e420f56a78b0994c40a0288043786dfac2cd317f32ae28eca2940b0d809c531f AS microos
 RUN zypper install -y \
         container-selinux \
         selinux-policy-devel \
@@ -42,7 +42,7 @@ RUN zypper install -y \
 # libglib is required to install createrepo_c in Tumbleweed.
 RUN zypper install -y libglib-2_0-0 createrepo_c
 
-FROM opensuse/leap:16.0@sha256:1e710a28227dea189500dd49a9ccd2b9f218e059329354abdb1297ee94d2dcd4 AS sle
+FROM opensuse/leap:16.0@sha256:a4115e2f5aea9712a7c73974fd94000a034fc3051ef29b5f7722fbf04070dd9d AS sle
 RUN zypper install -y \
         container-selinux \
         selinux-policy-devel \
