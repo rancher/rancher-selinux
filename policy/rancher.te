@@ -33,16 +33,16 @@ allow rke_logreader_t container_log_t:dir { open read search };
 allow rke_logreader_t container_log_t:lnk_file { getattr read };
 allow rke_logreader_t container_log_t:file { getattr open read watch };
 allow rke_logreader_t container_var_lib_t:dir search;
-allow rke_logreader_t container_var_lib_t:file { getattr open read };
+allow rke_logreader_t container_var_lib_t:file { getattr open read watch };
 allow rke_logreader_t container_var_lib_t:lnk_file { getattr read };
 allow rke_logreader_t syslogd_var_run_t:dir { read watch };
 allow rke_logreader_t syslogd_var_run_t:file { getattr map open read };
 allow rke_logreader_t var_log_t:dir { read watch };
-allow rke_logreader_t var_log_t:file { getattr map open read };
+allow rke_logreader_t var_log_t:file { getattr map open read watch };
 allow rke_logreader_t self:tcp_socket listen;
 
 ############################################################################
-# type prom_node_exporter_t                                                #
+# type: prom_node_exporter_t                                               #
 # target: prometheus-node-exporter container for Rancher monitoring chart  #
 ############################################################################
 
@@ -67,7 +67,7 @@ corenet_tcp_connect_http_port(rancher_aiagent_container_t)
 allow rancher_aiagent_container_t self:tcp_socket listen;
 
 ############################################################################
-# type: rancher_aimcp_container_t				                           #
+# type: rancher_aimcp_container_t				           #
 # project: rancher/rancher-ai-mcp                                          #
 # target: rancher-mcp-server container for Rancher AI                      #
 ############################################################################

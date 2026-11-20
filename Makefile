@@ -1,5 +1,7 @@
 RUNNER ?= docker
-POLICIES = $(shell find policy -mindepth 1 -maxdepth 1 -type d | sort -u | cut -f 2 -d'/')
+# Target distros. Each needs a matching build stage in the Dockerfile and an
+# entry in policy/rancher-selinux.spec.
+POLICIES = centos9 centos10 fedora43 microos sle
 DISTROS = $(shell find hack/e2e -type f | grep .yaml | sort -u | cut -f3 -d'/' | cut -f1 -d.)
 LIMA_DEBUG :=
 
