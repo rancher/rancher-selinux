@@ -4,7 +4,7 @@ ARG POLICY
 # to build the SELinux policies and package them as RPM for each
 # of the target platforms.
 
-FROM quay.io/rockylinux/rockylinux:9@sha256:8101994123cf3d0a8fee517bee7f39e555c7d92bd2d9eb3303cc988a0eeed00f AS centos9
+FROM quay.io/rockylinux/rockylinux:9@sha256:bb5755f96bec05ff26165e779ec843d7167544be9e50770508f307019a6d05c4 AS centos9
 RUN yum install -y \
         createrepo_c \
         epel-release \
@@ -14,7 +14,7 @@ RUN yum install -y \
         rpm-build \
         rpm-sign
 
-FROM quay.io/rockylinux/rockylinux:10@sha256:827d37bc128288ccf160ee318bb3cb92d591164cb217e92f8bc61e3982ae1834 AS centos10
+FROM quay.io/rockylinux/rockylinux:10@sha256:d24beedc58f79b9e0e9289fedaa4fcbcbe692b1438883a86f177fd7c51053ca8 AS centos10
 RUN yum install -y \
         createrepo_c \
         epel-release \
@@ -33,7 +33,7 @@ RUN dnf clean all && dnf install -y \
         rpm-build \
         rpm-sign
 
-FROM opensuse/tumbleweed@sha256:e420f56a78b0994c40a0288043786dfac2cd317f32ae28eca2940b0d809c531f AS microos
+FROM opensuse/tumbleweed@sha256:9450579ce8e65d72792a6348e46ee88d6bdb449a2322e54b68132a1ceefce94b AS microos
 RUN zypper install -y \
         container-selinux \
         selinux-policy-devel \
