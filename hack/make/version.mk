@@ -39,12 +39,12 @@ ifeq ($(VERSION),)
 endif
 
 define parse_version
-[[ "$(VERSION)" =~ ^v((0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*))(-((alpha|beta|rc)[0-9]+)|~([a-fA-F0-9]{7,10}(dirty)?))?\.(production|testing)\.([1-9][0-9]*)$$ ]] || exit 0; \
+[[ "$(VERSION)" =~ ^v((0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*))(-((alpha|beta|rc)[0-9]+)|~([a-fA-F0-9]{7,10}(dirty)?))?\.(production|testing)\.(0|[1-9][0-9]*)$$ ]] || exit 0; \
 	ver=$${BASH_REMATCH[1]}; pre=$${BASH_REMATCH[6]}; dev=$${BASH_REMATCH[8]}; \
 	channel=$${BASH_REMATCH[10]}; release=$${BASH_REMATCH[11]}; \
-	if [[ -n "$$dev" ]]; then [[ "$$ver" == 0.0.0 && "$$channel" == testing ]] || exit 0; ver="$$ver~$$dev"; \
-	elif [[ -n "$$pre" ]]; then [[ "$$channel" == testing ]] || exit 0; ver="$$ver~$$pre"; \
-	else [[ "$$channel" == production ]] || exit 0; fi;
+	if [[ -n "$$dev" ]]; then [[ "$$ver" == 0.0.0 && "$$channel" == testing && "$$release" == 0 ]] || exit 0; ver="$$ver~$$dev"; \
+	elif [[ -n "$$pre" ]]; then [[ "$$channel" == testing && "$$release" != 0 ]] || exit 0; ver="$$ver~$$pre"; \
+	else [[ "$$channel" == production && "$$release" != 0 ]] || exit 0; fi;
 endef
 
 RPM_VERSION = $(shell $(parse_version) echo $$ver)
