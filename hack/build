@@ -4,6 +4,7 @@ set -eoux pipefail
 OUTDIR="${OUTDIR:-/out}"
 USER="${USER:-1000}"
 GROUP="${GROUP:-1000}"
+POLICY="${POLICY:?POLICY must be set to the target distro}"
 
 function build(){
     local RPM_VERSION=$1
@@ -14,6 +15,7 @@ function build(){
     rpmbuild \
         --define "rancher_selinux_version ${RPM_VERSION}" \
         --define "rancher_selinux_release ${RPM_RELEASE}" \
+        --define "distro ${POLICY}" \
         --define "_sourcedir $PWD" \
         --define "_specdir $PWD" \
         --define "_builddir $PWD" \

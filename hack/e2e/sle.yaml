@@ -3,13 +3,13 @@ images:
 # every rebuild, which breaks the digest check. Bump build and digest together
 # (digests: <location>.sha256) when openSUSE removes this build.
 
-- location: https://download.opensuse.org/distribution/leap/16.0/appliances/Leap-16.0-Minimal-VM.x86_64-Cloud-Build18.95.qcow2
+- location: https://download.opensuse.org/distribution/leap/16.0/appliances/Leap-16.0-Minimal-VM.x86_64-Cloud-Build18.96.qcow2
   arch: x86_64
-  digest: "sha256:cdf1e5eefc20b7479059eb7ef12694e395d787168a11792997a0209499084ae5"
+  digest: "sha256:05637a09744708dde5148b49f703bc3192e4fe5f81ea4b104f586b1514b5421c"
 
 - location: https://download.opensuse.org/distribution/leap/16.0/appliances/Leap-16.0-Minimal-VM.aarch64-Cloud-Build18.95.qcow2
   arch: aarch64
-  digest: "sha256:9158494113be517a940a32394200ccd87ab1abed427317a4e93e4aa9a070b6eb"
+  digest: "sha256:d9094828e22bd0b1a6ff6290d338750cf694dbacf2a191744f49d2f2a0e6b389"
 
 provision:
 - mode: system

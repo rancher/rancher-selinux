@@ -36,6 +36,7 @@ RUN dnf clean all && dnf install -y \
 FROM opensuse/tumbleweed@sha256:9450579ce8e65d72792a6348e46ee88d6bdb449a2322e54b68132a1ceefce94b AS microos
 RUN zypper install -y \
         container-selinux \
+        findutils \
         selinux-policy-devel \
         rpm-build \
         rpm
@@ -45,6 +46,7 @@ RUN zypper install -y libglib-2_0-0 createrepo_c
 FROM opensuse/leap:16.0@sha256:a4115e2f5aea9712a7c73974fd94000a034fc3051ef29b5f7722fbf04070dd9d AS sle
 RUN zypper install -y \
         container-selinux \
+        findutils \
         selinux-policy-devel \
         rpm-build \
         rpm
@@ -58,9 +60,10 @@ FROM ${POLICY} AS final
 WORKDIR /src
 
 ARG POLICY
+ENV POLICY=${POLICY}
 COPY hack/sign /usr/local/bin/sign
-COPY policy/${POLICY}/rancher-selinux.spec \
-     policy/${POLICY}/rancher.fc \
-     policy/${POLICY}/rancher.te \
+COPY policy/rancher-selinux.spec \
+     policy/rancher.fc \
+     policy/rancher.te \
      hack/build \
      hack/metadata ./
